@@ -46,7 +46,7 @@ async def create_planejamento(
         status="em_geracao",
     )
     session.add(planejamento)
-    await session.flush()
+    await session.commit()  # Fix #2: commit before Celery dispatch to avoid race condition
 
     # Get historical themes (last 3 months)
     hist_result = await session.execute(
@@ -213,7 +213,7 @@ async def ajustar_planejamento(
         historico_temas=historico_temas,
     )
 
-    await session.flush()
+    await session.commit()  # Fix #2: commit before dispatch
 
     from app.tasks.generation_tasks import generate_planejamento_task
     generate_planejamento_task.delay(str(planejamento.id), context.to_dict())

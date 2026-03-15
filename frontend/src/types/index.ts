@@ -21,7 +21,7 @@ export interface Planejamento {
   status: 'rascunho' | 'em_geracao' | 'revisao' | 'aprovado' | 'ajuste_solicitado' | 'failed';
   resumo_estrategico: string | null;
   temas: Array<{ tema: string; pilar: string; justificativa: string }> | null;
-  calendario: Array<{ data: string; tipo_conteudo: string; titulo: string }> | null;
+  calendario: Array<{ data: string; tipo_conteudo?: string; tipo?: string; titulo: string }> | null;
   inputs_extras: string | null;
   pesquisa: Record<string, any> | null;
   feedback: string | null;

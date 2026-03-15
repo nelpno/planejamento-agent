@@ -55,7 +55,7 @@ export default function NovoPlanejamento() {
         cliente_id: clienteId,
         mes_referencia: mesReferencia,
         inputs_extras: inputsExtras || null,
-        tipos_conteudo: tiposConteudo.length > 0 ? tiposConteudo : undefined,
+        tipos_conteudo_override: tiposConteudo.length > 0 ? tiposConteudo : undefined,
       });
 
       navigate(`/planejamentos/${res.data.id}`);

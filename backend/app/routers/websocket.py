@@ -8,6 +8,8 @@ from app.database import AsyncSessionLocal
 
 router = APIRouter()
 
+MAX_POLLS = 300  # Fix #11: 10 min timeout (300 * 2s)
+
 
 @router.websocket("/ws/planejamento/{planejamento_id}")
 async def planejamento_websocket(websocket: WebSocket, planejamento_id: str):
@@ -21,8 +23,9 @@ async def planejamento_websocket(websocket: WebSocket, planejamento_id: str):
         return
 
     try:
-        while True:
+        for _ in range(MAX_POLLS):
             from app.models.planejamento import Planejamento
+            from app.models.pipeline_log import PipelineLog
 
             async with AsyncSessionLocal() as session:
                 result = await session.execute(
@@ -31,8 +34,6 @@ async def planejamento_websocket(websocket: WebSocket, planejamento_id: str):
                 planejamento = result.scalar_one_or_none()
 
                 if planejamento:
-                    # Get pipeline logs
-                    from app.models.pipeline_log import PipelineLog
                     logs_result = await session.execute(
                         select(PipelineLog)
                         .where(PipelineLog.planejamento_id == plan_uuid)
@@ -40,6 +41,7 @@ async def planejamento_websocket(websocket: WebSocket, planejamento_id: str):
                     )
                     logs = logs_result.scalars().all()
 
+                    # Fix #3: Send format compatible with frontend
                     status_data = {
                         "status": planejamento.status,
                         "pipeline_logs": [
@@ -61,6 +63,9 @@ async def planejamento_websocket(websocket: WebSocket, planejamento_id: str):
                         break
 
             await asyncio.sleep(2)
+        else:
+            await websocket.close(code=4008)  # timeout
+            return
 
     except WebSocketDisconnect:
         pass

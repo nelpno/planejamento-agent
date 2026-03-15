@@ -2,15 +2,11 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import update
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
 from app.agents.context import PipelineContext
 from app.agents.estrategista import EstrategistaAgent
 from app.agents.pesquisador import PesquisadorAgent
 from app.agents.planejador import PlanejadorAgent
 from app.agents.revisor import RevisorAgent
-from app.config import settings
 from app.providers.openrouter_client import OpenRouterClient
 
 logger = logging.getLogger(__name__)
@@ -19,27 +15,14 @@ logger = logging.getLogger(__name__)
 class PipelineOrchestrator:
     """Orchestrates the 4-agent planning pipeline with review loop."""
 
-    def __init__(self, database_url: str | None = None):
+    # Fix #10: Accept session_factory from caller instead of creating own engine
+    def __init__(self, session_factory=None):
         self.client = OpenRouterClient()
         self.pesquisador = PesquisadorAgent(self.client)
         self.estrategista = EstrategistaAgent(self.client)
         self.planejador = PlanejadorAgent(self.client)
         self.revisor = RevisorAgent(self.client)
-
-        # Separate async engine for Celery context
-        db_url = database_url or settings.DATABASE_URL
-        self._engine = create_async_engine(
-            db_url,
-            echo=False,
-            pool_pre_ping=True,
-            pool_size=5,
-            max_overflow=10,
-        )
-        self._session_factory = async_sessionmaker(
-            bind=self._engine,
-            class_=AsyncSession,
-            expire_on_commit=False,
-        )
+        self._session_factory = session_factory
 
     async def run(self, context: PipelineContext) -> PipelineContext:
         """Execute the full pipeline: Pesquisador -> Estrategista -> Planejador -> Revisor (loop)."""
@@ -50,52 +33,39 @@ class PipelineOrchestrator:
             # Step 1: Pesquisador
             logger.info("[%s] Starting Pesquisador", context.planejamento_id)
             context = await self.pesquisador.run(context)
-            await self._save_progress(context, "pesquisa_concluida")
+            await self._save_progress(context, "pesquisador")
 
             # Step 2: Estrategista
             logger.info("[%s] Starting Estrategista", context.planejamento_id)
             context = await self.estrategista.run(context)
-            await self._save_progress(context, "estrategia_concluida")
+            await self._save_progress(context, "estrategista")
 
             # Step 3 + 4: Planejador + Revisor loop
             for iteration in range(1, context.max_iterations + 1):
                 context.iteration = iteration
-                logger.info(
-                    "[%s] Starting Planejador (iteration %d)",
-                    context.planejamento_id,
-                    iteration,
-                )
+                logger.info("[%s] Planejador (iteration %d)", context.planejamento_id, iteration)
                 context = await self.planejador.run(context)
-                await self._save_progress(context, f"conteudo_gerado_iter_{iteration}")
+                await self._save_progress(context, "planejador")
 
-                logger.info(
-                    "[%s] Starting Revisor (iteration %d)",
-                    context.planejamento_id,
-                    iteration,
-                )
+                logger.info("[%s] Revisor (iteration %d)", context.planejamento_id, iteration)
                 context = await self.revisor.run(context)
-                await self._save_progress(context, f"revisao_iter_{iteration}")
+                await self._save_progress(context, "revisor")
 
                 if context.revisao and context.revisao.aprovado:
                     logger.info(
-                        "[%s] Content approved with score %d at iteration %d",
-                        context.planejamento_id,
-                        context.revisao.score,
-                        iteration,
+                        "[%s] Approved with score %d at iteration %d",
+                        context.planejamento_id, context.revisao.score, iteration,
                     )
                     break
 
                 if iteration < context.max_iterations:
                     logger.info(
-                        "[%s] Content rejected (score %d), retrying...",
+                        "[%s] Rejected (score %d), retrying...",
                         context.planejamento_id,
                         context.revisao.score if context.revisao else 0,
                     )
                 else:
-                    logger.warning(
-                        "[%s] Max iterations reached. Using last output.",
-                        context.planejamento_id,
-                    )
+                    logger.warning("[%s] Max iterations reached.", context.planejamento_id)
 
             context.completed_at = datetime.now(timezone.utc).isoformat()
             context.current_status = "concluido"
@@ -103,17 +73,18 @@ class PipelineOrchestrator:
         except Exception as e:
             context.current_status = "failed"
             context.completed_at = datetime.now(timezone.utc).isoformat()
-            logger.exception(
-                "[%s] Pipeline failed: %s", context.planejamento_id, str(e)
-            )
+            logger.exception("[%s] Pipeline failed: %s", context.planejamento_id, str(e))
             raise
         finally:
-            await self.close()
+            await self.client.close()
 
         return context
 
     async def _save_progress(self, context: PipelineContext, step: str):
         """Persist pipeline progress to the database."""
+        if not self._session_factory:
+            return
+
         from app.models.pipeline_log import PipelineLog
 
         try:
@@ -128,14 +99,4 @@ class PipelineOrchestrator:
                 session.add(log_entry)
                 await session.commit()
         except Exception as e:
-            logger.error(
-                "[%s] Failed to save progress for step '%s': %s",
-                context.planejamento_id,
-                step,
-                str(e),
-            )
-
-    async def close(self):
-        """Clean up resources."""
-        await self.client.close()
-        await self._engine.dispose()
+            logger.error("[%s] Failed to save progress for '%s': %s", context.planejamento_id, step, str(e))

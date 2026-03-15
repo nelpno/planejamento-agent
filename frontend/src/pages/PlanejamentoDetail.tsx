@@ -34,17 +34,18 @@ export default function PlanejamentoDetail() {
     if (planejamento.status === 'em_geracao') {
       wsRef.current?.close();
       wsRef.current = connectPlanejamentoWS(id, (data) => {
-        if (data.type === 'log') {
-          setPipelineLogs((prev) => [...prev, data.log]);
-          setCurrentAgent(data.log.agent_name);
-        } else if (data.type === 'status_update') {
+        // Fix #3: Read format sent by backend directly
+        if (data.pipeline_logs) {
+          setPipelineLogs(data.pipeline_logs);
+          const lastLog = data.pipeline_logs[data.pipeline_logs.length - 1];
+          if (lastLog) setCurrentAgent(lastLog.agent_name);
+        }
+        if (data.status) {
           setPlanejamento((prev) => prev ? { ...prev, status: data.status } : null);
           if (data.status !== 'em_geracao') {
             wsRef.current?.close();
             fetchData();
           }
-        } else if (data.type === 'complete') {
-          fetchData();
         }
       });
     }
@@ -245,7 +246,7 @@ export default function PlanejamentoDetail() {
                         </td>
                         <td className="py-3 px-4">
                           <span className="px-2 py-0.5 bg-secondary/10 text-secondary text-xs rounded-full font-medium">
-                            {item.tipo_conteudo.replace(/_/g, ' ')}
+                            {(item.tipo_conteudo || item.tipo || '').replace(/_/g, ' ')}
                           </span>
                         </td>
                         <td className="py-3 px-4 text-gray-700">{item.titulo}</td>

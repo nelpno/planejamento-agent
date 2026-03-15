@@ -2,8 +2,9 @@ import asyncio
 import logging
 import uuid
 from dataclasses import asdict
+from datetime import datetime, timezone
 
-from sqlalchemy import update
+from sqlalchemy import delete as sql_delete, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.agents.context import PipelineContext
@@ -14,24 +15,11 @@ from app.tasks.celery_app import celery_app
 logger = logging.getLogger(__name__)
 
 
-def _get_or_create_event_loop():
-    """Get the current event loop or create a new one for Celery workers."""
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_closed():
-            raise RuntimeError("Loop is closed")
-        return loop
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        return loop
-
-
+# Fix #1: Use asyncio.run() instead of manual event loop management
 @celery_app.task(bind=True, name="generate_planejamento")
 def generate_planejamento_task(self, planejamento_id: str, pipeline_context_dict: dict):
     """Celery task that runs the planning pipeline."""
-    loop = _get_or_create_event_loop()
-    return loop.run_until_complete(
+    return asyncio.run(
         _run_pipeline(self, planejamento_id, pipeline_context_dict)
     )
 
@@ -40,7 +28,7 @@ async def _run_pipeline(task, planejamento_id: str, pipeline_context_dict: dict)
     """Async pipeline execution."""
     settings = get_settings()
 
-    # Create a separate engine for Celery context
+    # Single engine for the entire task (Fix #10: avoid double engine)
     engine = create_async_engine(
         settings.DATABASE_URL,
         echo=False,
@@ -55,17 +43,16 @@ async def _run_pipeline(task, planejamento_id: str, pipeline_context_dict: dict)
     )
 
     try:
-        # Update planejamento status to "em_geracao"
         await _update_planejamento_status(
             session_factory, planejamento_id, "em_geracao"
         )
 
-        # Build context and run pipeline
         context = PipelineContext.from_dict(pipeline_context_dict)
-        orchestrator = PipelineOrchestrator(database_url=settings.DATABASE_URL)
+
+        # Fix #10: Pass session_factory to orchestrator instead of creating second engine
+        orchestrator = PipelineOrchestrator(session_factory=session_factory)
         context = await orchestrator.run(context)
 
-        # Save results to database
         await _save_results(session_factory, planejamento_id, context)
 
         logger.info(
@@ -77,7 +64,7 @@ async def _run_pipeline(task, planejamento_id: str, pipeline_context_dict: dict)
 
         return {
             "planejamento_id": planejamento_id,
-            "status": "concluido",
+            "status": "revisao",
             "score": context.revisao.score if context.revisao else 0,
             "total_conteudos": len(context.conteudos),
             "iterations": context.iteration,
@@ -87,18 +74,12 @@ async def _run_pipeline(task, planejamento_id: str, pipeline_context_dict: dict)
         logger.exception(
             "Pipeline failed for planejamento %s: %s", planejamento_id, str(e)
         )
-
-        # Update status to failed
         try:
             await _update_planejamento_status(
-                session_factory,
-                planejamento_id,
-                "failed",
-                error=str(e),
+                session_factory, planejamento_id, "failed", error=str(e),
             )
         except Exception as db_err:
             logger.error("Failed to update status to failed: %s", str(db_err))
-
         raise
 
     finally:
@@ -106,10 +87,7 @@ async def _run_pipeline(task, planejamento_id: str, pipeline_context_dict: dict)
 
 
 async def _update_planejamento_status(
-    session_factory,
-    planejamento_id: str,
-    status: str,
-    error: str | None = None,
+    session_factory, planejamento_id: str, status: str, error: str | None = None,
 ):
     """Update planejamento status in the database."""
     from app.models.planejamento import Planejamento
@@ -132,31 +110,37 @@ async def _save_results(session_factory, planejamento_id: str, context: Pipeline
     from app.models.conteudo import Conteudo
     from app.models.planejamento import Planejamento
 
+    plan_id = uuid.UUID(planejamento_id)
+
+    # Fix #12: Calculate pipeline duration
+    pipeline_duration = None
+    if context.started_at:
+        try:
+            started = datetime.fromisoformat(context.started_at)
+            pipeline_duration = (datetime.now(timezone.utc) - started).total_seconds()
+        except (ValueError, TypeError):
+            pass
+
     async with session_factory() as session:
+        # Fix #4: Delete existing conteudos before inserting new ones (prevents duplication on re-run)
+        await session.execute(
+            sql_delete(Conteudo).where(Conteudo.planejamento_id == plan_id)
+        )
+
         # Update planejamento with results
-        plan_id = uuid.UUID(planejamento_id)
         stmt = (
             update(Planejamento)
             .where(Planejamento.id == plan_id)
             .values(
                 status="revisao",
                 resumo_estrategico=(
-                    context.estrategia.resumo_estrategico
-                    if context.estrategia
-                    else None
+                    context.estrategia.resumo_estrategico if context.estrategia else None
                 ),
-                temas=(
-                    context.estrategia.temas if context.estrategia else None
-                ),
-                calendario=(
-                    context.estrategia.calendario if context.estrategia else None
-                ),
-                pesquisa=(
-                    asdict(context.pesquisa) if context.pesquisa else None
-                ),
-                pipeline_logs=[
-                    asdict(entry) for entry in context.decision_log
-                ],
+                temas=context.estrategia.temas if context.estrategia else None,
+                calendario=context.estrategia.calendario if context.estrategia else None,
+                pesquisa=asdict(context.pesquisa) if context.pesquisa else None,
+                pipeline_logs=[asdict(entry) for entry in context.decision_log],
+                pipeline_duration=pipeline_duration,
             )
         )
         await session.execute(stmt)
@@ -213,7 +197,7 @@ async def _save_results(session_factory, planejamento_id: str, context: Pipeline
         async with session_factory() as session:
             stmt = (
                 update(Planejamento)
-                .where(Planejamento.id == uuid.UUID(planejamento_id))
+                .where(Planejamento.id == plan_id)
                 .values(pdf_url=pdf_url, html_content=html)
             )
             await session.execute(stmt)
