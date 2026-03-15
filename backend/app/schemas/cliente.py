@@ -20,8 +20,8 @@ class ClienteCreate(BaseModel):
 
 
 class KickOffInput(BaseModel):
-    nome_empresa: str
-    nicho: str
+    nome_empresa: str | None = None  # IA extrai do texto se não informado
+    nicho: str | None = None  # IA extrai do texto se não informado
     kickoff_text: str  # All kick-off answers as free text
 
 

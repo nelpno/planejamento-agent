@@ -141,8 +141,7 @@ export default function KickOff() {
   const [error, setError] = useState('');
   const [mode, setMode] = useState<'manual' | 'paste' | null>(null);
   const [pasteText, setPasteText] = useState('');
-  const [pasteNome, setPasteNome] = useState('');
-  const [pasteNicho, setPasteNicho] = useState('');
+  const [preview, setPreview] = useState<any>(null);
 
   function updateField(field: keyof KickOffForm, value: string | string[]) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -183,16 +182,14 @@ export default function KickOff() {
   }
 
   async function handlePasteGenerate() {
-    if (!pasteNome.trim() || !pasteNicho.trim() || !pasteText.trim()) return;
+    if (!pasteText.trim()) return;
     setLoading(true);
     setError('');
     try {
-      const res = await api.post<Cliente>('/clientes/kick-off', {
-        nome_empresa: pasteNome,
-        nicho: pasteNicho,
+      const res = await api.post('/clientes/kick-off/preview', {
         kickoff_text: pasteText,
       });
-      setResult(res.data);
+      setPreview(res.data);
     } catch (err: any) {
       setError(err?.response?.data?.detail || 'Erro ao gerar perfil com IA. Tente novamente.');
     } finally {
@@ -200,8 +197,24 @@ export default function KickOff() {
     }
   }
 
+  async function handleSavePreview() {
+    if (!preview) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await api.post<Cliente>('/clientes', preview);
+      setResult(res.data);
+      setPreview(null);
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || 'Erro ao salvar cliente.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function handleRegenerate() {
     setResult(null);
+    setPreview(null);
     setError('');
     if (mode === 'paste') {
       handlePasteGenerate();
@@ -644,7 +657,7 @@ export default function KickOff() {
       )}
 
       {/* PASTE MODE */}
-      {mode === 'paste' && !result && !loading && (
+      {mode === 'paste' && !result && !preview && !loading && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
@@ -654,30 +667,7 @@ export default function KickOff() {
             </div>
             <div>
               <h2 className="text-xl font-bold text-primary">Colar Respostas</h2>
-              <p className="text-sm text-gray-500">Cole as respostas do Google Forms ou anotações da reunião</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Nome da Empresa *</label>
-              <input
-                type="text"
-                value={pasteNome}
-                onChange={(e) => setPasteNome(e.target.value)}
-                placeholder="Ex: BGA Advogados"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/30 focus:border-accent outline-none text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Nicho *</label>
-              <input
-                type="text"
-                value={pasteNicho}
-                onChange={(e) => setPasteNicho(e.target.value)}
-                placeholder="Ex: Advocacia Trabalhista"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/30 focus:border-accent outline-none text-sm"
-              />
+              <p className="text-sm text-gray-500">Cole as respostas do Google Forms ou anotações da reunião. A IA extrai nome, nicho e tudo mais.</p>
             </div>
           </div>
 
@@ -686,8 +676,8 @@ export default function KickOff() {
             <textarea
               value={pasteText}
               onChange={(e) => setPasteText(e.target.value)}
-              placeholder={"Cole aqui todas as respostas do formulário de Kick Off...\n\nExemplo:\nInstagram: @advocaciabga\nSite: https://advocaciabga.com.br\nSobre a empresa: Escritório de advocacia com foco em direito trabalhista...\nObjetivos: 10 contratos por semana...\nPúblico: Trabalhadores CLT 25-55 anos...\nConcorrentes: Escritório X, Escritório Y...\nPUV: Advocacia especializada e humanizada..."}
-              rows={12}
+              placeholder={"Cole aqui todas as respostas do formulário de Kick Off...\n\nA IA vai extrair automaticamente:\n- Nome da empresa e nicho\n- Público-alvo e personas\n- Tom de voz e PUV\n- Concorrentes\n- Pilares de conteúdo\n- Tipos de conteúdo sugeridos\n- Instruções especiais"}
+              rows={14}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/30 focus:border-accent outline-none text-sm resize-none font-mono"
             />
             <p className="text-xs text-gray-400 mt-1">Pode ser texto livre, respostas copiadas do Google Forms, ou anotações da reunião</p>
@@ -699,20 +689,158 @@ export default function KickOff() {
 
           <div className="flex justify-between">
             <button
-              onClick={() => { setMode(null); setPasteText(''); setPasteNome(''); setPasteNicho(''); }}
+              onClick={() => { setMode(null); setPasteText(''); }}
               className="px-6 py-2.5 text-gray-600 hover:text-gray-800 text-sm font-medium"
             >
               Voltar
             </button>
             <button
               onClick={handlePasteGenerate}
-              disabled={!pasteNome.trim() || !pasteNicho.trim() || !pasteText.trim()}
+              disabled={!pasteText.trim()}
               className="px-8 py-3 bg-accent text-white rounded-lg font-semibold hover:bg-accent/90 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shadow-md shadow-accent/20"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              Gerar Perfil com IA
+              Analisar com IA
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* PREVIEW MODE - operador confirma antes de salvar */}
+      {preview && !result && !loading && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-primary">Perfil Gerado pela IA</h2>
+              <p className="text-sm text-gray-500">Revise os dados abaixo e edite se necessário antes de salvar</p>
+            </div>
+          </div>
+
+          {/* Editable fields */}
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nome da Empresa</label>
+                <input type="text" value={preview.nome_empresa || ''} onChange={(e) => setPreview({...preview, nome_empresa: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nicho</label>
+                <input type="text" value={preview.nicho || ''} onChange={(e) => setPreview({...preview, nicho: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" />
+              </div>
+            </div>
+
+            {/* Público-alvo */}
+            {preview.publico_alvo && (
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <h3 className="font-semibold text-sm text-blue-900 mb-2">Público-Alvo</h3>
+                <p className="text-sm text-blue-800">{preview.publico_alvo.descricao}</p>
+                <div className="flex gap-4 mt-2 text-xs text-blue-600">
+                  <span>Idade: {preview.publico_alvo.faixa_etaria}</span>
+                  <span>Local: {preview.publico_alvo.localizacao}</span>
+                </div>
+                {preview.publico_alvo.dores && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {preview.publico_alvo.dores.map((d: string, i: number) => (
+                      <span key={i} className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{d}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tom de Voz */}
+            {preview.tom_de_voz && (
+              <div className="p-4 bg-purple-50 rounded-lg">
+                <h3 className="font-semibold text-sm text-purple-900 mb-2">Tom de Voz</h3>
+                <p className="text-sm text-purple-800">{preview.tom_de_voz.estilo}</p>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {preview.tom_de_voz.palavras_chave?.map((p: string, i: number) => (
+                    <span key={i} className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">{p}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Pilares */}
+            {preview.pilares && (
+              <div className="p-4 bg-amber-50 rounded-lg">
+                <h3 className="font-semibold text-sm text-amber-900 mb-3">Pilares de Conteúdo</h3>
+                <div className="space-y-2">
+                  {preview.pilares.map((p: any, i: number) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="w-full bg-amber-100 rounded-full h-4 flex-1">
+                        <div className="bg-amber-500 h-4 rounded-full flex items-center justify-end pr-2" style={{width: `${p.percentual}%`}}>
+                          <span className="text-[10px] text-white font-bold">{p.percentual}%</span>
+                        </div>
+                      </div>
+                      <span className="text-sm font-medium text-amber-800 w-32 truncate">{p.nome}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tipos de Conteúdo */}
+            {preview.tipos_conteudo && (
+              <div className="p-4 bg-green-50 rounded-lg">
+                <h3 className="font-semibold text-sm text-green-900 mb-2">Tipos de Conteúdo Sugeridos</h3>
+                <div className="flex flex-wrap gap-2">
+                  {preview.tipos_conteudo.map((t: any, i: number) => (
+                    <span key={i} className="px-3 py-1.5 bg-green-100 text-green-800 rounded-lg text-sm font-medium">
+                      {t.tipo?.replaceAll('_', ' ')} ({t.quantidade}x)
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Concorrentes */}
+            {preview.concorrentes && preview.concorrentes.length > 0 && (
+              <div className="p-4 bg-red-50 rounded-lg">
+                <h3 className="font-semibold text-sm text-red-900 mb-2">Concorrentes</h3>
+                <div className="flex flex-wrap gap-2">
+                  {preview.concorrentes.map((c: any, i: number) => (
+                    <span key={i} className="px-3 py-1.5 bg-red-100 text-red-800 rounded-lg text-sm">{c.nome} {c.instagram && `(${c.instagram})`}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Instruções */}
+            {preview.instrucoes && (
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h3 className="font-semibold text-sm text-gray-900 mb-2">Instruções Especiais</h3>
+                <p className="text-sm text-gray-700 whitespace-pre-line">{preview.instrucoes}</p>
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
+          )}
+
+          <div className="flex justify-between mt-8 pt-6 border-t">
+            <button
+              onClick={() => { setPreview(null); }}
+              className="px-6 py-2.5 border border-gray-300 text-gray-600 rounded-lg font-medium hover:bg-gray-50"
+            >
+              Gerar Novamente
+            </button>
+            <button
+              onClick={handleSavePreview}
+              className="px-8 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all flex items-center gap-2 shadow-md"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Confirmar e Salvar Cliente
             </button>
           </div>
         </div>

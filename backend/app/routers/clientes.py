@@ -1,4 +1,5 @@
 import json
+import re
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -9,6 +10,27 @@ from app.database import get_session
 from app.providers.openrouter_client import OpenRouterClient
 from app.schemas.cliente import ClienteCreate, ClienteUpdate, ClienteResponse, KickOffInput
 from app.services import cliente_service
+
+
+def _parse_json_safe(response: str) -> dict:
+    """Parse JSON from LLM response with fallback for markdown/text wrapping."""
+    try:
+        return json.loads(response)
+    except json.JSONDecodeError:
+        pass
+    cleaned = re.sub(r"^```(?:json)?\s*\n?", "", response.strip())
+    cleaned = re.sub(r"\n?```\s*$", "", cleaned)
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        pass
+    match = re.search(r"\{[\s\S]*\}", response)
+    if match:
+        try:
+            return json.loads(match.group())
+        except json.JSONDecodeError:
+            pass
+    raise ValueError(f"Failed to parse JSON: {response[:300]}")
 
 router = APIRouter(prefix="/api/clientes", tags=["clientes"])
 
@@ -42,6 +64,8 @@ Retorne APENAS JSON válido com esta estrutura:
     {"nome": "Nome", "instagram": "@handle", "site": "url"}
   ],
   "redes_sociais": {"instagram": "@handle", "site": "url"},
+  "nome_empresa": "Nome da empresa extraído do texto",
+  "nicho": "Nicho/segmento de mercado da empresa",
   "instrucoes": "Instruções especiais baseadas no kick-off (PUV, sazonalidade, estratégias que funcionam, etc.)"
 }
 
@@ -54,12 +78,9 @@ Regras:
 - Instruções devem incluir PUV, sazonalidade e estratégias vencedoras mencionadas"""
 
 
-@router.post("/kick-off", response_model=ClienteResponse, status_code=201)
-async def create_from_kickoff(
-    data: KickOffInput,
-    session: AsyncSession = Depends(get_session),
-):
-    """Cria um cliente a partir das respostas do Kick Off, usando IA para estruturar os dados."""
+@router.post("/kick-off/preview")
+async def preview_kickoff(data: KickOffInput):
+    """Processa respostas do Kick Off com IA e retorna preview do perfil (sem salvar)."""
     client = OpenRouterClient()
     try:
         response = await client.chat(
@@ -78,13 +99,14 @@ async def create_from_kickoff(
         await client.close()
 
     try:
-        perfil = json.loads(response)
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=502, detail="Resposta da IA não é JSON válido")
+        perfil = _parse_json_safe(response)
+    except ValueError as e:
+        raise HTTPException(status_code=502, detail=f"Erro ao processar resposta da IA: {str(e)[:200]}")
 
-    cliente_data = {
-        "nome_empresa": data.nome_empresa,
-        "nicho": data.nicho,
+    # Retorna preview completo para o frontend — operador confirma antes de salvar
+    return {
+        "nome_empresa": data.nome_empresa or perfil.get("nome_empresa", ""),
+        "nicho": data.nicho or perfil.get("nicho", ""),
         "publico_alvo": perfil.get("publico_alvo"),
         "tom_de_voz": perfil.get("tom_de_voz"),
         "pilares": perfil.get("pilares"),
@@ -93,9 +115,6 @@ async def create_from_kickoff(
         "redes_sociais": perfil.get("redes_sociais"),
         "instrucoes": perfil.get("instrucoes"),
     }
-
-    cliente = await cliente_service.create_cliente(session, cliente_data)
-    return cliente
 
 
 @router.post("", response_model=ClienteResponse, status_code=201)
