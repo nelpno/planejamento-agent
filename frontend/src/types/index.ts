@@ -32,6 +32,9 @@ export interface Planejamento {
   destino_conversao: string | null;
   tipo_conteudo_uso: string | null;
   plataformas: string[] | null;
+  produtos_promover: string | null;
+  referencias_anteriores: string | null;
+  feedback_reuniao: string | null;
   created_at: string;
   updated_at: string;
 }

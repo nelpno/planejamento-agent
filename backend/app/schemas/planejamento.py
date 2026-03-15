@@ -10,6 +10,9 @@ class PlanejamentoCreate(BaseModel):
     cliente_id: UUID
     mes_referencia: str
     inputs_extras: str | None = None
+    produtos_promover: str | None = None  # O que vender/promover este mês
+    referencias_anteriores: str | None = None  # Conteúdos que performaram bem no mês anterior
+    feedback_reuniao: str | None = None  # Anotações/transcrição da reunião mensal
     tipos_conteudo_override: list[dict] | None = None
     foco: str | None = None  # geração_leads, vendas_ecommerce, crescimento_organico, branding, lancamento, retencao
     destino_conversao: str | None = None  # whatsapp, site, dm_instagram, loja_online, agendamento, telefone
@@ -52,6 +55,9 @@ class PlanejamentoResponse(BaseModel):
     destino_conversao: str | None = None
     tipo_conteudo_uso: str | None = None
     plataformas: list[str] | None = None
+    produtos_promover: str | None = None
+    referencias_anteriores: str | None = None
+    feedback_reuniao: str | None = None
     created_at: datetime
     updated_at: datetime | None = None
 

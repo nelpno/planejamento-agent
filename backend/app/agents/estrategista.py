@@ -39,7 +39,13 @@ class EstrategistaAgent(BaseAgent):
             "- O calendario deve cobrir o mes inteiro com datas especificas\n"
             "- Cada tema deve ter uma justificativa estrategica\n"
             "- O resumo estrategico deve explicar a logica geral do planejamento\n"
-            "- Tudo em portugues brasileiro"
+            "- Tudo em portugues brasileiro\n\n"
+            "IMPORTANTE: Separe CONTEXTO de DIRECIONAMENTO:\n"
+            "- O perfil do cliente (nome, nicho, publico, tom de voz, pilares) e CONTEXTO — quem e o cliente\n"
+            "- Os inputs extras (produtos a promover, referencias, feedback da reuniao) sao DIRECIONAMENTO — o que fazer este mes\n"
+            "- Os temas devem ser direcionados pelo DIRECIONAMENTO, nao pelo CONTEXTO\n"
+            "- Se o cliente quer promover produtos especificos, os temas devem girar em torno desses produtos\n"
+            "- Se ha referencias do mes anterior, use-as como inspiracao para formatos e abordagens"
         )
 
         user_prompt = (

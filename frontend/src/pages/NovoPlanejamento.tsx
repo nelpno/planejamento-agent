@@ -12,6 +12,9 @@ export default function NovoPlanejamento() {
   const [clienteId, setClienteId] = useState('');
   const [mesReferencia, setMesReferencia] = useState('');
   const [inputsExtras, setInputsExtras] = useState('');
+  const [produtosPromover, setProdutosPromover] = useState('');
+  const [referenciasAnteriores, setReferenciasAnteriores] = useState('');
+  const [feedbackReuniao, setFeedbackReuniao] = useState('');
   const [tiposConteudo, setTiposConteudo] = useState<Array<{ tipo: string; quantidade: number }>>([]);
   const [foco, setFoco] = useState<string | null>(null);
   const [destinoConversao, setDestinoConversao] = useState<string | null>(null);
@@ -58,6 +61,9 @@ export default function NovoPlanejamento() {
       const res = await api.post('/planejamentos', {
         cliente_id: clienteId,
         mes_referencia: mesReferencia,
+        produtos_promover: produtosPromover || null,
+        referencias_anteriores: referenciasAnteriores || null,
+        feedback_reuniao: feedbackReuniao || null,
         inputs_extras: inputsExtras || null,
         tipos_conteudo_override: tiposConteudo.length > 0 ? tiposConteudo : undefined,
         foco: foco || null,
@@ -147,10 +153,59 @@ export default function NovoPlanejamento() {
           />
         </div>
 
-        {/* Step 3: Foco do Mes */}
+        {/* Step 3: Direcionamento do Mes */}
         <div className="card">
           <div className="flex items-center gap-3 mb-4">
             <span className="w-8 h-8 bg-accent text-white rounded-full flex items-center justify-center font-bold text-sm">3</span>
+            <h2 className="text-lg font-bold text-primary">Direcionamento do Mes</h2>
+          </div>
+          <p className="text-sm text-gray-500 mb-4">
+            Defina o que o cliente quer fazer este mes. Esses inputs direcionam TODO o conteudo gerado.
+          </p>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="produtos-promover" className="block text-sm font-semibold text-gray-700 mb-1">
+                O que o cliente quer vender/promover este mes?
+              </label>
+              <textarea
+                id="produtos-promover"
+                className="input-field min-h-[100px]"
+                value={produtosPromover}
+                onChange={(e) => setProdutosPromover(e.target.value)}
+                placeholder="Ex: Pacote de ferias com 20% de desconto, novo servico de consultoria, campanha do Dia das Maes..."
+              />
+            </div>
+            <div>
+              <label htmlFor="referencias-anteriores" className="block text-sm font-semibold text-gray-700 mb-1">
+                Referencias — o que performou bem no mes anterior?
+              </label>
+              <textarea
+                id="referencias-anteriores"
+                className="input-field min-h-[80px]"
+                value={referenciasAnteriores}
+                onChange={(e) => setReferenciasAnteriores(e.target.value)}
+                placeholder="Ex: Video sobre horas extras teve 45K views, carrossel de direitos trabalhistas teve 2K saves..."
+              />
+            </div>
+            <div>
+              <label htmlFor="feedback-reuniao" className="block text-sm font-semibold text-gray-700 mb-1">
+                Feedback/anotacoes da reuniao mensal
+              </label>
+              <textarea
+                id="feedback-reuniao"
+                className="input-field min-h-[100px]"
+                value={feedbackReuniao}
+                onChange={(e) => setFeedbackReuniao(e.target.value)}
+                placeholder="Cole aqui a transcricao da reuniao ou suas anotacoes. Ex: Cliente quer focar em gestantes este mes, pediu para nao falar de acidente de trabalho..."
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Step 4: Foco do Mes */}
+        <div className="card">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="w-8 h-8 bg-accent text-white rounded-full flex items-center justify-center font-bold text-sm">4</span>
             <h2 className="text-lg font-bold text-primary">Foco do Mes</h2>
           </div>
           <p className="text-sm text-gray-500 mb-3">Qual o objetivo principal do conteudo deste mes?</p>
@@ -183,10 +238,10 @@ export default function NovoPlanejamento() {
           </div>
         </div>
 
-        {/* Step 4: Destino da Conversao */}
+        {/* Step 5: Destino da Conversao */}
         <div className="card">
           <div className="flex items-center gap-3 mb-4">
-            <span className="w-8 h-8 bg-accent text-white rounded-full flex items-center justify-center font-bold text-sm">4</span>
+            <span className="w-8 h-8 bg-accent text-white rounded-full flex items-center justify-center font-bold text-sm">5</span>
             <h2 className="text-lg font-bold text-primary">Destino da Conversao</h2>
           </div>
           <p className="text-sm text-gray-500 mb-3">Para onde os CTAs devem direcionar o publico?</p>
@@ -215,10 +270,10 @@ export default function NovoPlanejamento() {
           </div>
         </div>
 
-        {/* Step 5: Tipo de Conteudo (Uso) */}
+        {/* Step 6: Tipo de Conteudo (Uso) */}
         <div className="card">
           <div className="flex items-center gap-3 mb-4">
-            <span className="w-8 h-8 bg-accent text-white rounded-full flex items-center justify-center font-bold text-sm">5</span>
+            <span className="w-8 h-8 bg-accent text-white rounded-full flex items-center justify-center font-bold text-sm">6</span>
             <h2 className="text-lg font-bold text-primary">Tipo de Conteudo</h2>
           </div>
           <p className="text-sm text-gray-500 mb-3">O conteudo sera para uso organico, pago ou ambos?</p>
@@ -244,10 +299,10 @@ export default function NovoPlanejamento() {
           </div>
         </div>
 
-        {/* Step 6: Plataformas */}
+        {/* Step 7: Plataformas */}
         <div className="card">
           <div className="flex items-center gap-3 mb-4">
-            <span className="w-8 h-8 bg-accent text-white rounded-full flex items-center justify-center font-bold text-sm">6</span>
+            <span className="w-8 h-8 bg-accent text-white rounded-full flex items-center justify-center font-bold text-sm">7</span>
             <h2 className="text-lg font-bold text-primary">Plataformas</h2>
           </div>
           <p className="text-sm text-gray-500 mb-3">Em quais plataformas o conteudo sera publicado? (selecao multipla)</p>
@@ -279,28 +334,28 @@ export default function NovoPlanejamento() {
           </div>
         </div>
 
-        {/* Step 7: Inputs extras */}
+        {/* Step 8: Observacoes adicionais */}
         <div className="card">
           <div className="flex items-center gap-3 mb-4">
-            <span className="w-8 h-8 bg-accent text-white rounded-full flex items-center justify-center font-bold text-sm">7</span>
-            <h2 className="text-lg font-bold text-primary">Inputs Extras</h2>
+            <span className="w-8 h-8 bg-accent text-white rounded-full flex items-center justify-center font-bold text-sm">8</span>
+            <h2 className="text-lg font-bold text-primary">Observacoes Adicionais</h2>
           </div>
           <p className="text-sm text-gray-500 mb-3">
-            Adicione transcricoes, notas ou qualquer informacao extra para guiar o planejamento
+            Alguma nota extra que nao se encaixou nos campos acima? (opcional)
           </p>
           <textarea
-            className="input-field min-h-[120px]"
+            className="input-field min-h-[80px]"
             value={inputsExtras}
             onChange={(e) => setInputsExtras(e.target.value)}
-            placeholder="Cole aqui transcricoes de reunioes, briefings, notas estrategicas..."
+            placeholder="Qualquer observacao adicional para o planejamento..."
           />
         </div>
 
-        {/* Step 8: Tipos de conteudo */}
+        {/* Step 9: Tipos de conteudo */}
         {selectedCliente && tiposConteudo.length > 0 && (
           <div className="card">
             <div className="flex items-center gap-3 mb-4">
-              <span className="w-8 h-8 bg-accent text-white rounded-full flex items-center justify-center font-bold text-sm">8</span>
+              <span className="w-8 h-8 bg-accent text-white rounded-full flex items-center justify-center font-bold text-sm">9</span>
               <h2 className="text-lg font-bold text-primary">Tipos de Conteudo</h2>
             </div>
             <p className="text-sm text-gray-500 mb-4">

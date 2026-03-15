@@ -43,6 +43,9 @@ class Planejamento(Base):
     destino_conversao: Mapped[str | None] = mapped_column(nullable=True)
     tipo_conteudo_uso: Mapped[str | None] = mapped_column(nullable=True)
     plataformas: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    produtos_promover: Mapped[str | None] = mapped_column(Text, nullable=True)
+    referencias_anteriores: Mapped[str | None] = mapped_column(Text, nullable=True)
+    feedback_reuniao: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         server_default=func.now(), nullable=False
     )

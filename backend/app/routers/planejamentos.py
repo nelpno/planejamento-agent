@@ -38,11 +38,26 @@ async def create_planejamento(
     if not cliente:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
 
+    # Build rich inputs for the pipeline
+    inputs_parts = []
+    if data.produtos_promover:
+        inputs_parts.append(f"PRODUTOS/SERVICOS PARA PROMOVER ESTE MES:\n{data.produtos_promover}")
+    if data.referencias_anteriores:
+        inputs_parts.append(f"REFERENCIAS DO MES ANTERIOR (o que performou bem):\n{data.referencias_anteriores}")
+    if data.feedback_reuniao:
+        inputs_parts.append(f"FEEDBACK/ANOTACOES DA REUNIAO COM CLIENTE:\n{data.feedback_reuniao}")
+    if data.inputs_extras:
+        inputs_parts.append(f"OBSERVACOES ADICIONAIS:\n{data.inputs_extras}")
+    inputs_text = "\n\n".join(inputs_parts) if inputs_parts else data.inputs_extras
+
     # Create planejamento record
     planejamento = Planejamento(
         cliente_id=data.cliente_id,
         mes_referencia=data.mes_referencia,
         inputs_extras=data.inputs_extras,
+        produtos_promover=data.produtos_promover,
+        referencias_anteriores=data.referencias_anteriores,
+        feedback_reuniao=data.feedback_reuniao,
         foco=data.foco,
         destino_conversao=data.destino_conversao,
         tipo_conteudo_uso=data.tipo_conteudo_uso,
@@ -83,7 +98,7 @@ async def create_planejamento(
             instrucoes=cliente.instrucoes,
         ),
         mes_referencia=data.mes_referencia,
-        inputs_extras=data.inputs_extras,
+        inputs_extras=inputs_text,
         tipos_conteudo_override=data.tipos_conteudo_override,
         historico_temas=historico_temas,
         foco=data.foco,
@@ -207,6 +222,18 @@ async def regerar_planejamento(
     planejamento.status = "em_geracao"
     planejamento.feedback = None
 
+    # Build rich inputs for regeneration
+    regen_inputs_parts = []
+    if planejamento.produtos_promover:
+        regen_inputs_parts.append(f"PRODUTOS/SERVICOS PARA PROMOVER ESTE MES:\n{planejamento.produtos_promover}")
+    if planejamento.referencias_anteriores:
+        regen_inputs_parts.append(f"REFERENCIAS DO MES ANTERIOR (o que performou bem):\n{planejamento.referencias_anteriores}")
+    if planejamento.feedback_reuniao:
+        regen_inputs_parts.append(f"FEEDBACK/ANOTACOES DA REUNIAO COM CLIENTE:\n{planejamento.feedback_reuniao}")
+    if planejamento.inputs_extras:
+        regen_inputs_parts.append(f"OBSERVACOES ADICIONAIS:\n{planejamento.inputs_extras}")
+    regen_inputs_text = "\n\n".join(regen_inputs_parts) if regen_inputs_parts else planejamento.inputs_extras
+
     from app.agents.context import PipelineContext, ClienteData
     context = PipelineContext(
         planejamento_id=str(planejamento.id),
@@ -222,7 +249,7 @@ async def regerar_planejamento(
             instrucoes=cliente.instrucoes,
         ),
         mes_referencia=planejamento.mes_referencia,
-        inputs_extras=planejamento.inputs_extras,
+        inputs_extras=regen_inputs_text,
         historico_temas=historico_temas,
         foco=planejamento.foco,
         destino_conversao=planejamento.destino_conversao,

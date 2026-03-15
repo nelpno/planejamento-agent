@@ -223,8 +223,8 @@ export default function KickOff() {
     }
   }
 
-  // Input component helpers
-  function TextInput({ label, field, placeholder, prefix }: { label: string; field: keyof KickOffForm; placeholder?: string; prefix?: string }) {
+  // Input render helpers (plain functions, NOT React components — avoids remount on every keystroke)
+  function renderTextInput(label: string, field: keyof KickOffForm, placeholder?: string, prefix?: string) {
     return (
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
@@ -246,7 +246,7 @@ export default function KickOff() {
     );
   }
 
-  function TextArea({ label, field, placeholder, rows = 3, tooltip }: { label: string; field: keyof KickOffForm; placeholder?: string; rows?: number; tooltip?: string }) {
+  function renderTextArea(label: string, field: keyof KickOffForm, placeholder?: string, rows = 3, tooltip?: string) {
     return (
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -273,7 +273,7 @@ export default function KickOff() {
     );
   }
 
-  function SelectInput({ label, field, options }: { label: string; field: keyof KickOffForm; options: { value: string; label: string }[] }) {
+  function renderSelectInput(label: string, field: keyof KickOffForm, options: { value: string; label: string }[]) {
     return (
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
@@ -298,40 +298,36 @@ export default function KickOff() {
         return (
           <div className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <TextInput label="Nome da Empresa *" field="nome_empresa" placeholder="Ex: Clínica Bella Vida" />
-              <TextInput label="Nicho *" field="nicho" placeholder="Ex: Estética e Beleza" />
+              {renderTextInput("Nome da Empresa *", "nome_empresa", "Ex: Clínica Bella Vida")}
+              {renderTextInput("Nicho *", "nicho", "Ex: Estética e Beleza")}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <TextInput label="Instagram" field="instagram" placeholder="clinicabellavida" prefix="@" />
-              <TextInput label="Site" field="site" placeholder="www.clinicabellavida.com.br" prefix="https://" />
+              {renderTextInput("Instagram", "instagram", "clinicabellavida", "@")}
+              {renderTextInput("Site", "site", "www.clinicabellavida.com.br", "https://")}
             </div>
-            <TextArea label="Conte um pouco sobre a empresa" field="sobre_empresa" placeholder="História, o que faz, diferenciais, tempo de mercado..." rows={4} />
-            <SelectInput
-              label="Momento atual da empresa"
-              field="momento"
-              options={[
-                { value: 'Estagnada', label: 'Estagnada' },
-                { value: 'Crescimento leve', label: 'Crescimento leve' },
-                { value: 'Crescimento acelerado', label: 'Crescimento acelerado' },
-                { value: 'Em queda', label: 'Em queda' },
-              ]}
-            />
-            <TextArea label="Principais envolvidos no projeto (nome e cargo)" field="envolvidos" placeholder="Ex: João Silva - CEO, Maria Santos - Marketing" rows={2} />
+            {renderTextArea("Conte um pouco sobre a empresa", "sobre_empresa", "História, o que faz, diferenciais, tempo de mercado...", 4)}
+            {renderSelectInput("Momento atual da empresa", "momento", [
+              { value: 'Estagnada', label: 'Estagnada' },
+              { value: 'Crescimento leve', label: 'Crescimento leve' },
+              { value: 'Crescimento acelerado', label: 'Crescimento acelerado' },
+              { value: 'Em queda', label: 'Em queda' },
+            ])}
+            {renderTextArea("Principais envolvidos no projeto (nome e cargo)", "envolvidos", "Ex: João Silva - CEO, Maria Santos - Marketing", 2)}
           </div>
         );
       case 2:
         return (
           <div className="space-y-5">
-            <TextArea label="Objetivos a curto prazo (6 meses)" field="objetivos_curto" placeholder="Ex: Aumentar faturamento em 30%, dobrar a captação de leads..." />
-            <TextArea label="Objetivos a longo prazo (1-2 anos)" field="objetivos_longo" placeholder="Ex: Abrir segunda unidade, tornar-se referência no nicho..." />
-            <TextArea label="Principal objetivo com tráfego" field="objetivo_trafego" placeholder="Ex: Gerar leads qualificados, aumentar vendas online..." />
-            <TextArea label="Justificativas para o projeto" field="justificativas" placeholder="Por que investir em marketing digital agora?" />
+            {renderTextArea("Objetivos a curto prazo (6 meses)", "objetivos_curto", "Ex: Aumentar faturamento em 30%, dobrar a captação de leads...")}
+            {renderTextArea("Objetivos a longo prazo (1-2 anos)", "objetivos_longo", "Ex: Abrir segunda unidade, tornar-se referência no nicho...")}
+            {renderTextArea("Principal objetivo com tráfego", "objetivo_trafego", "Ex: Gerar leads qualificados, aumentar vendas online...")}
+            {renderTextArea("Justificativas para o projeto", "justificativas", "Por que investir em marketing digital agora?")}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <TextInput label="Média de vendas por mês" field="media_vendas" placeholder="Ex: 50 vendas" />
-              <TextInput label="Ticket médio (3 meses)" field="ticket_medio" placeholder="Ex: R$ 2.500" />
-              <TextInput label="Lucro líquido mensal" field="lucro_liquido" placeholder="Ex: R$ 30.000" />
+              {renderTextInput("Média de vendas por mês", "media_vendas", "Ex: 50 vendas")}
+              {renderTextInput("Ticket médio (3 meses)", "ticket_medio", "Ex: R$ 2.500")}
+              {renderTextInput("Lucro líquido mensal", "lucro_liquido", "Ex: R$ 30.000")}
             </div>
-            <TextInput label="CRM utilizado" field="crm" placeholder="Ex: RD Station, HubSpot, Pipedrive..." />
+            {renderTextInput("CRM utilizado", "crm", "Ex: RD Station, HubSpot, Pipedrive...")}
           </div>
         );
       case 3:
@@ -356,34 +352,24 @@ export default function KickOff() {
                 ))}
               </div>
             </div>
-            <TextArea label="Histórico de estratégias vencedoras + Processo de vendas" field="estrategias_vencedoras" placeholder="O que já funcionou? Como é o processo de vendas atualmente?" rows={4} />
-            <TextInput label="Canal que mais vende" field="canal_mais_vende" placeholder="Ex: Instagram, Indicação, Google..." />
-            <TextArea label="Valor investido em mídia e resultados" field="investimento_midia" placeholder="Ex: R$ 5.000/mês em Meta Ads, gerando 200 leads..." />
-            <TextArea label="Peculiaridades sazonais" field="sazonalidade" placeholder="Ex: Vendas aumentam em datas comemorativas, inverno é baixa temporada..." />
-            <TextArea label="Principais concorrentes" field="concorrentes" placeholder="Ex: @concorrente1 - Clínica XYZ (www.xyz.com.br)" rows={3} />
-            <SelectInput
-              label="Preço em relação aos concorrentes"
-              field="preco_relativo"
-              options={[
-                { value: 'Mais barato', label: 'Mais barato' },
-                { value: 'Na média', label: 'Na média' },
-                { value: 'Mais caro', label: 'Mais caro' },
-              ]}
-            />
-            <TextArea label="Marcas de referência" field="marcas_referencia" placeholder="Marcas que admira, mesmo que de outro segmento..." rows={2} />
+            {renderTextArea("Histórico de estratégias vencedoras + Processo de vendas", "estrategias_vencedoras", "O que já funcionou? Como é o processo de vendas atualmente?", 4)}
+            {renderTextInput("Canal que mais vende", "canal_mais_vende", "Ex: Instagram, Indicação, Google...")}
+            {renderTextArea("Valor investido em mídia e resultados", "investimento_midia", "Ex: R$ 5.000/mês em Meta Ads, gerando 200 leads...")}
+            {renderTextArea("Peculiaridades sazonais", "sazonalidade", "Ex: Vendas aumentam em datas comemorativas, inverno é baixa temporada...")}
+            {renderTextArea("Principais concorrentes", "concorrentes", "Ex: @concorrente1 - Clínica XYZ (www.xyz.com.br)", 3)}
+            {renderSelectInput("Preço em relação aos concorrentes", "preco_relativo", [
+              { value: 'Mais barato', label: 'Mais barato' },
+              { value: 'Na média', label: 'Na média' },
+              { value: 'Mais caro', label: 'Mais caro' },
+            ])}
+            {renderTextArea("Marcas de referência", "marcas_referencia", "Marcas que admira, mesmo que de outro segmento...", 2)}
           </div>
         );
       case 4:
         return (
           <div className="space-y-5">
-            <TextArea label="Produtos/serviços mais vendidos" field="produtos_mais_vendidos" placeholder="Liste os principais produtos ou serviços..." rows={3} />
-            <TextArea
-              label="PUV - Proposta Única de Valor"
-              field="puv"
-              placeholder="O que torna sua empresa única? Por que o cliente deve escolher você?"
-              rows={3}
-              tooltip="O que diferencia sua empresa de todos os concorrentes. O motivo pelo qual o cliente escolhe VOCÊ."
-            />
+            {renderTextArea("Produtos/serviços mais vendidos", "produtos_mais_vendidos", "Liste os principais produtos ou serviços...", 3)}
+            {renderTextArea("PUV - Proposta Única de Valor", "puv", "O que torna sua empresa única? Por que o cliente deve escolher você?", 3, "O que diferencia sua empresa de todos os concorrentes. O motivo pelo qual o cliente escolhe VOCÊ.")}
             <div className="border border-gray-200 rounded-xl p-5 bg-gray-50/50">
               <h3 className="text-sm font-semibold text-primary mb-4 flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -392,10 +378,10 @@ export default function KickOff() {
                 Análise SWOT
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextArea label="Forças" field="forcas" placeholder="Pontos fortes da empresa..." rows={3} />
-                <TextArea label="Fraquezas" field="fraquezas" placeholder="Pontos a melhorar..." rows={3} />
-                <TextArea label="Oportunidades" field="oportunidades" placeholder="Oportunidades de mercado..." rows={3} />
-                <TextArea label="Ameaças" field="ameacas" placeholder="Ameaças externas..." rows={3} />
+                {renderTextArea("Forças", "forcas", "Pontos fortes da empresa...", 3)}
+                {renderTextArea("Fraquezas", "fraquezas", "Pontos a melhorar...", 3)}
+                {renderTextArea("Oportunidades", "oportunidades", "Oportunidades de mercado...", 3)}
+                {renderTextArea("Ameaças", "ameacas", "Ameaças externas...", 3)}
               </div>
             </div>
           </div>
@@ -403,24 +389,9 @@ export default function KickOff() {
       case 5:
         return (
           <div className="space-y-5">
-            <TextArea
-              label="Público-alvo 1 (principal)"
-              field="publico1"
-              placeholder="Ex: Mulher 30-50 anos, classe A/B, executiva, que busca procedimentos estéticos de alta qualidade, mora em capitais..."
-              rows={4}
-            />
-            <TextArea
-              label="Público-alvo 2 (opcional)"
-              field="publico2"
-              placeholder="Descreva um segundo perfil de público, se houver..."
-              rows={3}
-            />
-            <TextArea
-              label="Público-alvo 3 (opcional)"
-              field="publico3"
-              placeholder="Descreva um terceiro perfil de público, se houver..."
-              rows={3}
-            />
+            {renderTextArea("Público-alvo 1 (principal)", "publico1", "Ex: Mulher 30-50 anos, classe A/B, executiva, que busca procedimentos estéticos de alta qualidade, mora em capitais...", 4)}
+            {renderTextArea("Público-alvo 2 (opcional)", "publico2", "Descreva um segundo perfil de público, se houver...", 3)}
+            {renderTextArea("Público-alvo 3 (opcional)", "publico3", "Descreva um terceiro perfil de público, se houver...", 3)}
           </div>
         );
       default:
