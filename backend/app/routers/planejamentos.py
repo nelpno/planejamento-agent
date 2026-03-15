@@ -259,3 +259,63 @@ async def download_pdf(
         media_type="application/pdf",
         filename=f"planejamento-{planejamento.mes_referencia}.pdf",
     )
+
+
+@router.get("/{planejamento_id}/download-docx")
+async def download_docx(
+    planejamento_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+):
+    """Download planejamento as editable DOCX."""
+    from fastapi.responses import Response
+
+    result = await session.execute(
+        select(Planejamento).where(Planejamento.id == planejamento_id)
+    )
+    planejamento = result.scalar_one_or_none()
+    if not planejamento:
+        raise HTTPException(status_code=404, detail="Planejamento não encontrado")
+
+    # Get client info
+    result = await session.execute(
+        select(Cliente).where(Cliente.id == planejamento.cliente_id)
+    )
+    cliente = result.scalar_one_or_none()
+
+    # Get conteudos
+    conteudos_result = await session.execute(
+        select(Conteudo).where(Conteudo.planejamento_id == planejamento_id).order_by(Conteudo.ordem)
+    )
+    conteudos = conteudos_result.scalars().all()
+
+    from app.services.docx_service import generate_planejamento_docx
+
+    cliente_dict = {
+        "nome_empresa": cliente.nome_empresa if cliente else "Cliente",
+    }
+    planejamento_dict = {
+        "mes_referencia": planejamento.mes_referencia,
+        "resumo_estrategico": planejamento.resumo_estrategico,
+        "temas": planejamento.temas,
+        "calendario": planejamento.calendario,
+    }
+    conteudos_list = [
+        {
+            "tipo": c.tipo,
+            "pilar": c.pilar,
+            "framework": c.framework,
+            "titulo": c.titulo,
+            "conteudo": c.conteudo,
+            "variacoes_ab": c.variacoes_ab,
+        }
+        for c in conteudos
+    ]
+
+    docx_bytes = generate_planejamento_docx(cliente_dict, planejamento_dict, conteudos_list)
+
+    filename = f"planejamento-{planejamento.mes_referencia}.docx"
+    return Response(
+        content=docx_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
