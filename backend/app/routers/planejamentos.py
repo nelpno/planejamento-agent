@@ -105,11 +105,13 @@ async def create_planejamento(
 @router.get("", response_model=list[PlanejamentoListItem])
 async def list_planejamentos(
     cliente_id: uuid.UUID | None = None,
+    limit: int = 100,
     session: AsyncSession = Depends(get_session),
 ):
     query = select(Planejamento).order_by(Planejamento.created_at.desc())
     if cliente_id:
         query = query.where(Planejamento.cliente_id == cliente_id)
+    query = query.limit(limit)
     result = await session.execute(query)
     return list(result.scalars().all())
 
@@ -164,6 +166,8 @@ async def aprovar_planejamento(
             temas=temas_list,
         )
         session.add(historico)
+
+    await session.commit()
 
     return {"status": "aprovado"}
 

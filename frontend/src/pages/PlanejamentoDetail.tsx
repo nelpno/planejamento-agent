@@ -17,6 +17,7 @@ export default function PlanejamentoDetail() {
   const [currentAgent, setCurrentAgent] = useState<string>();
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
@@ -47,6 +48,9 @@ export default function PlanejamentoDetail() {
             fetchData();
           }
         }
+      }, () => {
+        // WebSocket error/close fallback: reload data via HTTP
+        fetchData();
       });
     }
   }, [id, planejamento?.status]);
@@ -83,11 +87,13 @@ export default function PlanejamentoDetail() {
   async function handleAprovar() {
     if (!id) return;
     setActionLoading(true);
+    setActionError(null);
     try {
       await api.post(`/planejamentos/${id}/aprovar`);
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao aprovar:', err);
+      setActionError(err?.response?.data?.detail || 'Erro ao aprovar planejamento. Tente novamente.');
     } finally {
       setActionLoading(false);
     }
@@ -96,11 +102,13 @@ export default function PlanejamentoDetail() {
   async function handleFeedback(feedback: string) {
     if (!id) return;
     setActionLoading(true);
+    setActionError(null);
     try {
       await api.post(`/planejamentos/${id}/ajustar`, { feedback });
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao enviar feedback:', err);
+      setActionError(err?.response?.data?.detail || 'Erro ao enviar feedback. Tente novamente.');
     } finally {
       setActionLoading(false);
     }
@@ -261,7 +269,7 @@ export default function PlanejamentoDetail() {
           {/* Pipeline duration */}
           {planejamento.pipeline_duration && (
             <div className="text-sm text-gray-400 mb-6">
-              Tempo de geracao: {(planejamento.pipeline_duration / 1000).toFixed(1)}s
+              Tempo de geracao: {planejamento.pipeline_duration.toFixed(0)}s
             </div>
           )}
 
@@ -280,6 +288,13 @@ export default function PlanejamentoDetail() {
                 </svg>
                 Baixar PDF
               </a>
+            </div>
+          )}
+
+          {/* Action error message */}
+          {actionError && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              {actionError}
             </div>
           )}
 

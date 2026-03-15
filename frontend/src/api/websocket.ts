@@ -1,6 +1,7 @@
 export function connectPlanejamentoWS(
   planejamentoId: string,
-  onMessage: (data: any) => void
+  onMessage: (data: any) => void,
+  onError?: () => void
 ): WebSocket {
   // Fix #14: Use current host for WebSocket (works through nginx proxy)
   const API_URL = import.meta.env.VITE_API_URL || '';
@@ -15,6 +16,17 @@ export function connectPlanejamentoWS(
 
   ws.onmessage = (event) => {
     onMessage(JSON.parse(event.data));
+  };
+
+  ws.onerror = () => {
+    if (onError) onError();
+  };
+
+  ws.onclose = (event) => {
+    // Abnormal close — treat as error and fallback
+    if (!event.wasClean && onError) {
+      onError();
+    }
   };
 
   return ws;

@@ -602,8 +602,7 @@ export default function KickOff() {
         </div>
         <h2 className="text-xl font-bold text-primary mb-2">Analisando respostas com IA...</h2>
         <p className="text-gray-500 text-center max-w-md">
-          Estamos processando as respostas do kick-off para gerar o perfil completo do cliente.
-          Isso pode levar alguns segundos.
+          Analisando com IA — pode levar 30-60 segundos...
         </p>
       </div>
     );

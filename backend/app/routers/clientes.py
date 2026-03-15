@@ -1,5 +1,3 @@
-import json
-import re
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -10,27 +8,7 @@ from app.database import get_session
 from app.providers.openrouter_client import OpenRouterClient
 from app.schemas.cliente import ClienteCreate, ClienteUpdate, ClienteResponse, KickOffInput
 from app.services import cliente_service
-
-
-def _parse_json_safe(response: str) -> dict:
-    """Parse JSON from LLM response with fallback for markdown/text wrapping."""
-    try:
-        return json.loads(response)
-    except json.JSONDecodeError:
-        pass
-    cleaned = re.sub(r"^```(?:json)?\s*\n?", "", response.strip())
-    cleaned = re.sub(r"\n?```\s*$", "", cleaned)
-    try:
-        return json.loads(cleaned)
-    except json.JSONDecodeError:
-        pass
-    match = re.search(r"\{[\s\S]*\}", response)
-    if match:
-        try:
-            return json.loads(match.group())
-        except json.JSONDecodeError:
-            pass
-    raise ValueError(f"Failed to parse JSON: {response[:300]}")
+from app.utils.json_parser import parse_json_safe as _parse_json_safe
 
 router = APIRouter(prefix="/api/clientes", tags=["clientes"])
 

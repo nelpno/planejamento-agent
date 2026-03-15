@@ -5,11 +5,11 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 
 from sqlalchemy import delete as sql_delete, update
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.context import PipelineContext
 from app.agents.orchestrator import PipelineOrchestrator
-from app.config import get_settings
+from app.database import AsyncSessionLocal
 from app.tasks.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
@@ -26,21 +26,7 @@ def generate_planejamento_task(self, planejamento_id: str, pipeline_context_dict
 
 async def _run_pipeline(task, planejamento_id: str, pipeline_context_dict: dict):
     """Async pipeline execution."""
-    settings = get_settings()
-
-    # Single engine for the entire task (Fix #10: avoid double engine)
-    engine = create_async_engine(
-        settings.DATABASE_URL,
-        echo=False,
-        pool_pre_ping=True,
-        pool_size=5,
-        max_overflow=10,
-    )
-    session_factory = async_sessionmaker(
-        bind=engine,
-        class_=AsyncSession,
-        expire_on_commit=False,
-    )
+    session_factory = AsyncSessionLocal
 
     try:
         await _update_planejamento_status(
@@ -83,7 +69,7 @@ async def _run_pipeline(task, planejamento_id: str, pipeline_context_dict: dict)
         raise
 
     finally:
-        await engine.dispose()
+        pass
 
 
 async def _update_planejamento_status(

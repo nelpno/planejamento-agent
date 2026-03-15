@@ -115,7 +115,7 @@ export default function Historico() {
                   <p className="text-sm text-gray-500">
                     {p.mes_referencia} &middot; {new Date(p.created_at).toLocaleDateString('pt-BR')}
                     {p.pipeline_duration && (
-                      <> &middot; {(p.pipeline_duration / 1000).toFixed(0)}s</>
+                      <> &middot; {p.pipeline_duration.toFixed(0)}s</>
                     )}
                   </p>
                 </div>

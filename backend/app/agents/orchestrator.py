@@ -52,6 +52,22 @@ class PipelineOrchestrator:
                 await self._save_progress(context, "revisor")
 
                 if context.revisao and context.revisao.aprovado:
+                    # Apply revised contents from Revisor if available
+                    if context.revisao.conteudos_revisados:
+                        from app.agents.context import ConteudoGerado
+                        context.conteudos = [
+                            ConteudoGerado(
+                                tipo=c.get("tipo", ""),
+                                pilar=c.get("pilar", ""),
+                                framework=c.get("framework", ""),
+                                titulo=c.get("titulo", ""),
+                                conteudo=c.get("conteudo", {}),
+                                variacoes_ab=c.get("variacoes_ab", []),
+                                referencia_visual=c.get("referencia_visual", ""),
+                                ordem=c.get("ordem", i),
+                            )
+                            for i, c in enumerate(context.revisao.conteudos_revisados)
+                        ]
                     logger.info(
                         "[%s] Approved with score %d at iteration %d",
                         context.planejamento_id, context.revisao.score, iteration,
