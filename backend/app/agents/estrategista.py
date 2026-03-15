@@ -33,6 +33,8 @@ class EstrategistaAgent(BaseAgent):
             "- Distribua os temas equilibradamente entre os pilares do cliente\n"
             "- Varie os tipos de conteudo (video_roteiro, arte_estatica, carrossel)\n"
             "- Considere as tendencias e datas comemorativas da pesquisa\n"
+            "- Distribua os temas para que cada pilar tenha pelo menos 1 peca de conteudo\n"
+            "- Se o historico de temas anteriores foi fornecido, NUNCA repita temas identicos\n"
             "- EVITE repetir temas do historico dos ultimos 3 meses\n"
             "- O calendario deve cobrir o mes inteiro com datas especificas\n"
             "- Cada tema deve ter uma justificativa estrategica\n"
@@ -80,12 +82,12 @@ class EstrategistaAgent(BaseAgent):
         response = await self.client.chat(
             model=settings.LLM_MODEL,
             messages=messages,
-            temperature=0.7,
+            temperature=0.6,
             max_tokens=6144,
             response_format={"type": "json_object"},
         )
 
-        data = json.loads(response)
+        data = self.parse_json_safe(response)
         context.estrategia = EstrategiaResult(
             temas=data.get("temas", []),
             calendario=data.get("calendario", []),

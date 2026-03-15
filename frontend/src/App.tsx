@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import ClienteManagement from './pages/ClienteManagement';
 import ClienteForm from './pages/ClienteForm';
+import KickOff from './pages/KickOff';
 import NovoPlanejamento from './pages/NovoPlanejamento';
 import PlanejamentoDetail from './pages/PlanejamentoDetail';
 import Historico from './pages/Historico';
@@ -13,6 +14,7 @@ function App() {
       <Route path="/" element={<Layout />}>
         <Route index element={<Dashboard />} />
         <Route path="clientes" element={<ClienteManagement />} />
+        <Route path="clientes/kick-off" element={<KickOff />} />
         <Route path="clientes/novo" element={<ClienteForm />} />
         <Route path="clientes/:id/editar" element={<ClienteForm />} />
         <Route path="novo-planejamento" element={<NovoPlanejamento />} />

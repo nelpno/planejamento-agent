@@ -46,13 +46,15 @@ class RevisorAgent(BaseAgent):
             "4. Variacao de frameworks: Ha diversidade nos frameworks usados?\n"
             "5. Qualidade do copy: Os textos sao persuasivos e sem erros?\n"
             "6. Coerencia estrategica: Os conteudos seguem a estrategia definida?\n"
-            "7. Completude: Todos os campos obrigatorios estao preenchidos?\n\n"
+            "7. Completude: Todos os campos obrigatorios estao preenchidos?\n"
+            "8. Variacoes A/B: Os campos copy_alternativa estao preenchidos nas variacoes_ab?\n\n"
             "Diretrizes:\n"
             f"- Score minimo para aprovacao: {settings.QUALITY_THRESHOLD}\n"
             "- Se reprovar, liste os problemas especificos em 'notas'\n"
             "- Se aprovar, inclua pontos positivos em 'notas'\n"
             "- Em 'conteudos_revisados', inclua apenas os conteudos que "
             "precisaram de correcoes, com as correcoes ja aplicadas\n"
+            "- Se o score ficar entre 70-79, aprove mas liste os ajustes menores aplicados\n"
             "- Tudo em portugues brasileiro"
         )
 
@@ -82,12 +84,12 @@ class RevisorAgent(BaseAgent):
         response = await self.client.chat(
             model=settings.LLM_MODEL,
             messages=messages,
-            temperature=0.3,
+            temperature=0.1,
             max_tokens=6144,
             response_format={"type": "json_object"},
         )
 
-        data = json.loads(response)
+        data = self.parse_json_safe(response)
         context.revisao = RevisaoResult(
             score=data.get("score", 0),
             aprovado=data.get("aprovado", False),

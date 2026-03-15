@@ -62,7 +62,68 @@ class PlanejadorAgent(BaseAgent):
             "- Inclua CTAs claros em TODAS as pecas\n"
             "- A referencia_visual deve descrever brevemente o estilo visual sugerido\n"
             "- Numere as pecas em ordem de publicacao (campo ordem)\n"
-            "- Tudo em portugues brasileiro"
+            "- Tudo em portugues brasileiro\n\n"
+            "EXEMPLOS DE CONTEUDO DE ALTA QUALIDADE:\n\n"
+            "--- EXEMPLO VIDEO_ROTEIRO (Framework PAS) ---\n"
+            "{\n"
+            '  "tipo": "video_roteiro",\n'
+            '  "pilar": "Educacao",\n'
+            '  "framework": "PAS",\n'
+            '  "titulo": "Acidente de Trabalho - Seus Direitos",\n'
+            '  "conteudo": {\n'
+            '    "gancho": "Sofreu um acidente de trabalho e a empresa fingiu que nada aconteceu?",\n'
+            '    "desenvolvimento": "Voce sente dor, ficou afastado e nao recebeu nada em troca? Isso e errado. Voce pode ter direito a: indenizacao por danos morais e esteticos, pensao mensal vitalicia, tratamento medico custeado pela empresa. Mas atencao: esses direitos so sao garantidos com um advogado especializado.",\n'
+            '    "cta": "Nao deixe passar! Fale agora com nossa equipe e entenda o que e seu por lei.",\n'
+            '    "duracao_estimada": "60s",\n'
+            '    "formato": "reels"\n'
+            "  },\n"
+            '  "variacoes_ab": [\n'
+            '    {"copy_alternativa": "Voce sabia que pode receber indenizacao por acidente de trabalho? A empresa e obrigada a pagar."}\n'
+            "  ],\n"
+            '  "referencia_visual": "Pessoa com expressao preocupada, transicao para advogado confiante",\n'
+            '  "ordem": 1\n'
+            "}\n\n"
+            "--- EXEMPLO ARTE_ESTATICA (Framework AIDA) ---\n"
+            "{\n"
+            '  "tipo": "arte_estatica",\n'
+            '  "pilar": "Conversao",\n'
+            '  "framework": "AIDA",\n'
+            '  "titulo": "Dispensa Discriminatoria",\n'
+            '  "conteudo": {\n'
+            '    "titulo_arte": "FOI DEMITIDO POR PRECONCEITO?",\n'
+            '    "copy": "Quando a demissao ocorre por motivo de raca, genero, doenca ou gravidez, e nao pelo desempenho, o trabalhador tem direito a reintegracao ou indenizacao em dobro, alem de dano moral.",\n'
+            '    "cta_botao": "CONVERSE COM NOSSA EQUIPE JURIDICA",\n'
+            '    "hashtags": ["#direitotrabalhista", "#discriminacao", "#seudireito"]\n'
+            "  },\n"
+            '  "variacoes_ab": [\n'
+            '    {"copy_alternativa": "Demissao por discriminacao e ILEGAL. Voce pode ter direito a indenizacao em DOBRO."}\n'
+            "  ],\n"
+            '  "referencia_visual": "Fundo escuro, texto branco em destaque, icone de justica",\n'
+            '  "ordem": 2\n'
+            "}\n\n"
+            "--- EXEMPLO CARROSSEL (Framework Hook-Story-Offer) ---\n"
+            "{\n"
+            '  "tipo": "carrossel",\n'
+            '  "pilar": "Educacao",\n'
+            '  "framework": "HSO",\n'
+            '  "titulo": "5 Direitos que Todo Trabalhador Tem",\n'
+            '  "conteudo": {\n'
+            '    "capa": {"titulo": "5 DIREITOS QUE VOCE NAO SABIA QUE TEM", "subtitulo": "Salve este post!"},\n'
+            '    "slides": [\n'
+            '      {"titulo": "1. Horas Extras", "conteudo": "Toda hora extra deve ser paga com adicional minimo de 50%. Se nao recebe, pode cobrar os ultimos 5 anos."},\n'
+            '      {"titulo": "2. Intervalo", "conteudo": "Jornada de 6h+ exige 1h de intervalo. Se nao cumprem, devem pagar como hora extra."},\n'
+            '      {"titulo": "3. FGTS", "conteudo": "A empresa DEVE depositar 8% do seu salario todo mes. Verifique no app FGTS."},\n'
+            '      {"titulo": "4. Adicional Noturno", "conteudo": "Trabalhou entre 22h e 5h? Tem direito a 20% a mais no salario."},\n'
+            '      {"titulo": "5. Ferias", "conteudo": "Ferias nao pagas geram multa em DOBRO. Nao aceite calado."}\n'
+            "    ],\n"
+            '    "cta_final": "Acha que seus direitos estao sendo violados? Fale com um especialista AGORA.",\n'
+            '    "copy_legenda": "Salve esse post e compartilhe com quem precisa saber!",\n'
+            '    "hashtags": ["#direitostrabalhistas", "#CLT", "#seudireito"]\n'
+            "  },\n"
+            '  "variacoes_ab": [],\n'
+            '  "referencia_visual": "Design limpo, numeracao em destaque, cores da marca",\n'
+            '  "ordem": 3\n'
+            "}"
         )
 
         calendario_str = json.dumps(
@@ -110,11 +171,11 @@ class PlanejadorAgent(BaseAgent):
             model=settings.LLM_MODEL,
             messages=messages,
             temperature=0.7,
-            max_tokens=8192,
+            max_tokens=12288,
             response_format={"type": "json_object"},
         )
 
-        data = json.loads(response)
+        data = self.parse_json_safe(response)
         conteudos_raw = data.get("conteudos", [])
         context.conteudos = [
             ConteudoGerado(

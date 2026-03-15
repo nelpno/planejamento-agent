@@ -34,6 +34,7 @@ class PesquisadorAgent(BaseAgent):
             "- Analise os concorrentes e identifique oportunidades\n"
             "- Identifique 3-5 tipos de conteudo que estao viralizando no nicho\n"
             "- O resumo deve ser um paragrafo conciso com os principais insights\n"
+            "- Seja especifico para o nicho do cliente, use dados realistas e atuais\n"
             "- Tudo em portugues brasileiro"
         )
 
@@ -60,12 +61,12 @@ class PesquisadorAgent(BaseAgent):
         response = await self.client.chat(
             model=settings.LLM_MODEL_FAST,
             messages=messages,
-            temperature=0.7,
+            temperature=0.8,
             max_tokens=4096,
             response_format={"type": "json_object"},
         )
 
-        data = json.loads(response)
+        data = self.parse_json_safe(response)
         context.pesquisa = PesquisaResult(
             tendencias=data.get("tendencias", []),
             datas_comemorativas=data.get("datas_comemorativas", []),
