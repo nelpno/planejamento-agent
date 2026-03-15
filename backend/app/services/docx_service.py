@@ -1,9 +1,12 @@
 """Geração de DOCX para planejamentos de marketing."""
 
 import io
+import os
 from docx import Document
 from docx.shared import Pt, Inches, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+_logo_path = os.path.join(os.path.dirname(__file__), "..", "templates", "logopmax.png")
 
 
 def generate_planejamento_docx(
@@ -19,6 +22,12 @@ def generate_planejamento_docx(
     style.font.name = "Calibri"
     style.font.size = Pt(11)
     style.paragraph_format.space_after = Pt(6)
+
+    # Logo
+    if os.path.exists(_logo_path):
+        logo_p = doc.add_paragraph()
+        logo_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        logo_p.add_run().add_picture(_logo_path, width=Inches(2))
 
     # Header
     header_p = doc.add_paragraph()

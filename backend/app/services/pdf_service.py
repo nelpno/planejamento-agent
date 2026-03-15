@@ -1,3 +1,4 @@
+import base64
 import os
 import httpx
 from jinja2 import Environment, FileSystemLoader
@@ -8,6 +9,13 @@ from app.config import settings
 # Jinja2 template environment
 _template_dir = os.path.join(os.path.dirname(__file__), "..", "templates")
 _jinja_env = Environment(loader=FileSystemLoader(_template_dir))
+
+# Pre-load logo as base64
+_logo_path = os.path.join(_template_dir, "logopmax.png")
+_logo_b64 = ""
+if os.path.exists(_logo_path):
+    with open(_logo_path, "rb") as f:
+        _logo_b64 = f"data:image/png;base64,{base64.b64encode(f.read()).decode()}"
 
 
 def render_planejamento_html(
@@ -21,6 +29,7 @@ def render_planejamento_html(
         cliente=cliente,
         planejamento=planejamento,
         conteudos=conteudos,
+        logo_b64=_logo_b64,
     )
 
 

@@ -75,10 +75,8 @@ export default function Layout() {
           flex flex-col`}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-6 border-b border-white/10">
-          <div className="w-10 h-10 bg-accent rounded-lg flex items-center justify-center font-bold text-lg">
-            P
-          </div>
+        <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
+          <img src="/logopmax.png" alt="PMAX" className="w-10 h-10 object-contain" />
           <div>
             <h1 className="font-bold text-lg leading-tight">PMAX</h1>
             <p className="text-xs text-gray-400">Planejamento</p>

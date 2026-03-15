@@ -10,7 +10,11 @@
     <!-- Header -->
     <header class="header">
         <div class="header-left">
+            {% if logo_b64 %}
+            <img src="{{ logo_b64 }}" alt="PMAX" style="height: 50px; width: auto;" />
+            {% else %}
             <div class="logo-pmax">PMAX</div>
+            {% endif %}
         </div>
         <div class="header-center">
             <h1>PLANEJAMENTO DE CONTEÚDO</h1>
