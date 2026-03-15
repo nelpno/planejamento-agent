@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     # LLM Models
     LLM_MODEL: str = "anthropic/claude-sonnet-4"
     LLM_MODEL_FAST: str = "anthropic/claude-haiku-4.5"
+    LLM_MODEL_SEARCH: str = "perplexity/sonar-pro"  # Web search nativo
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://planner:password@postgres:5432/planejamento_agent"

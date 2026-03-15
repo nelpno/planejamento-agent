@@ -58,13 +58,19 @@ class PesquisadorAgent(BaseAgent):
             {"role": "user", "content": user_prompt},
         ]
 
-        response = await self.client.chat(
-            model=settings.LLM_MODEL_FAST,
-            messages=messages,
-            temperature=0.8,
-            max_tokens=4096,
-            response_format={"type": "json_object"},
-        )
+        # Perplexity Sonar has native web search - no response_format support
+        use_search = settings.LLM_MODEL_SEARCH and "perplexity" in settings.LLM_MODEL_SEARCH
+        model = settings.LLM_MODEL_SEARCH if use_search else settings.LLM_MODEL_FAST
+        kwargs = {
+            "model": model,
+            "messages": messages,
+            "temperature": 0.8,
+            "max_tokens": 4096,
+        }
+        if not use_search:
+            kwargs["response_format"] = {"type": "json_object"}
+
+        response = await self.client.chat(**kwargs)
 
         data = self.parse_json_safe(response)
         context.pesquisa = PesquisaResult(
