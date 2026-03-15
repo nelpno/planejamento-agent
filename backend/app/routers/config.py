@@ -50,3 +50,56 @@ async def get_frameworks():
 @router.get("/pilares-exemplo")
 async def get_pilares_exemplo():
     return PILARES_EXEMPLO
+
+
+FOCOS = [
+    {"id": "geracao_leads", "label": "Geração de Leads", "descricao": "Captar contatos qualificados (advocacia, clínicas, consultoria)", "icon": "users"},
+    {"id": "vendas_ecommerce", "label": "Vendas no Site / E-commerce", "descricao": "Direcionar para compra online (Shopify, Mercado Livre)", "icon": "shopping-cart"},
+    {"id": "crescimento_organico", "label": "Crescimento Orgânico", "descricao": "Aumentar seguidores, engajamento e alcance", "icon": "trending-up"},
+    {"id": "branding", "label": "Branding / Posicionamento", "descricao": "Fortalecer marca e autoridade no nicho", "icon": "award"},
+    {"id": "lancamento", "label": "Lançamento", "descricao": "Lançar produto, serviço ou evento novo", "icon": "rocket"},
+    {"id": "retencao", "label": "Retenção / Relacionamento", "descricao": "Fidelizar e engajar clientes existentes", "icon": "heart"},
+]
+
+DESTINOS = [
+    {"id": "whatsapp", "label": "WhatsApp", "cta_exemplo": "Fale conosco no WhatsApp"},
+    {"id": "site", "label": "Site / Landing Page", "cta_exemplo": "Acesse o link na bio"},
+    {"id": "dm_instagram", "label": "DM Instagram", "cta_exemplo": "Comente EU QUERO"},
+    {"id": "loja_online", "label": "Loja Online", "cta_exemplo": "Compre agora / Link na bio"},
+    {"id": "agendamento", "label": "Agendamento", "cta_exemplo": "Agende sua consulta"},
+    {"id": "telefone", "label": "Telefone", "cta_exemplo": "Ligue agora"},
+]
+
+TIPOS_USO = [
+    {"id": "organico", "label": "Orgânico", "descricao": "Conteúdo para feed/stories/reels orgânicos"},
+    {"id": "pago", "label": "Tráfego Pago (Ads)", "descricao": "Criativos para campanhas pagas Meta/Google"},
+    {"id": "ambos", "label": "Ambos", "descricao": "Mix de orgânico e criativos para ads"},
+]
+
+PLATAFORMAS = [
+    {"id": "instagram", "label": "Instagram"},
+    {"id": "tiktok", "label": "TikTok"},
+    {"id": "youtube", "label": "YouTube"},
+    {"id": "linkedin", "label": "LinkedIn"},
+    {"id": "facebook", "label": "Facebook"},
+]
+
+
+@router.get("/focos")
+async def get_focos():
+    return FOCOS
+
+
+@router.get("/destinos")
+async def get_destinos():
+    return DESTINOS
+
+
+@router.get("/tipos-uso")
+async def get_tipos_uso():
+    return TIPOS_USO
+
+
+@router.get("/plataformas")
+async def get_plataformas():
+    return PLATAFORMAS

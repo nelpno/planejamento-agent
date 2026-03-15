@@ -86,6 +86,10 @@ class PipelineContext:
     inputs_extras: str | None = None
     tipos_conteudo_override: list[dict] | None = None
     historico_temas: list[dict] = field(default_factory=list)  # last 3 months
+    foco: str | None = None
+    destino_conversao: str | None = None
+    tipo_conteudo_uso: str | None = None
+    plataformas: list[str] = field(default_factory=list)
 
     # Agent outputs
     pesquisa: PesquisaResult | None = None

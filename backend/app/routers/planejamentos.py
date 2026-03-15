@@ -43,6 +43,10 @@ async def create_planejamento(
         cliente_id=data.cliente_id,
         mes_referencia=data.mes_referencia,
         inputs_extras=data.inputs_extras,
+        foco=data.foco,
+        destino_conversao=data.destino_conversao,
+        tipo_conteudo_uso=data.tipo_conteudo_uso,
+        plataformas=data.plataformas,
         status="em_geracao",
     )
     session.add(planejamento)
@@ -82,6 +86,10 @@ async def create_planejamento(
         inputs_extras=data.inputs_extras,
         tipos_conteudo_override=data.tipos_conteudo_override,
         historico_temas=historico_temas,
+        foco=data.foco,
+        destino_conversao=data.destino_conversao,
+        tipo_conteudo_uso=data.tipo_conteudo_uso,
+        plataformas=data.plataformas or [],
     )
 
     # Dispatch Celery task
@@ -211,6 +219,10 @@ async def ajustar_planejamento(
         mes_referencia=planejamento.mes_referencia,
         inputs_extras=f"{planejamento.inputs_extras or ''}\n\nFEEDBACK DO OPERADOR:\n{data.feedback}",
         historico_temas=historico_temas,
+        foco=planejamento.foco,
+        destino_conversao=planejamento.destino_conversao,
+        tipo_conteudo_uso=planejamento.tipo_conteudo_uso,
+        plataformas=planejamento.plataformas or [],
     )
 
     await session.commit()  # Fix #2: commit before dispatch

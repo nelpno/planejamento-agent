@@ -6,16 +6,16 @@ Pipeline de 4 agents IA (Pesquisador → Estrategista → Planejador → Revisor
 
 ## URLs
 - **Produção**: https://planejamento.dynamicagents.tech
-- **API Local**: http://localhost:8000
-- **Frontend Local**: http://localhost:5173
-- **Docs API**: http://localhost:8000/docs (apenas com DEBUG=true)
+- **API Docs**: https://planejamento.dynamicagents.tech/docs (DEBUG=true)
+- **GitHub**: https://github.com/nelpno/planejamento-agent
+- **Portainer**: Stack ID 33
 
 ## Stack
 - **Backend**: FastAPI 0.115 + Python 3.12 + SQLAlchemy 2.0 + asyncpg
 - **Frontend**: React 19 + Vite 6 + Tailwind CSS 3.4 + TypeScript
-- **Banco**: PostgreSQL 16 (rede nelsonNet)
-- **Fila**: Redis 7 + Celery 5.4
-- **IA**: OpenRouter API (Claude Sonnet/Haiku)
+- **Banco**: PostgreSQL 16 (rede nelsonNet, user: planner, db: planejamento_agent)
+- **Fila**: Redis 7 (db 1) + Celery 5.4
+- **IA**: OpenRouter API (Sonnet para criação, Haiku para fast, Perplexity Sonar para pesquisa web)
 - **PDF**: Gotenberg 8 (HTML → PDF)
 - **Deploy**: Docker Swarm via Portainer + Traefik + Cloudflare
 
@@ -25,46 +25,72 @@ backend/app/
 ├── main.py                    # FastAPI app + middlewares
 ├── database.py                # AsyncSession + engine
 ├── config/                    # Settings (pydantic-settings)
-├── models/                    # SQLAlchemy ORM
+├── models/                    # SQLAlchemy ORM (clientes, planejamentos, conteudos, historico, pipeline_logs)
 ├── schemas/                   # Pydantic I/O
-├── routers/                   # API endpoints
-│   ├── clientes.py            # CRUD clientes
-│   ├── planejamentos.py       # Gerar/listar/aprovar
-│   ├── config.py              # Tipos conteúdo, frameworks
-│   └── websocket.py           # Pipeline real-time
-├── agents/                    # Pipeline de IA
-│   ├── orchestrator.py        # Controller
-│   ├── pesquisador.py         # Tendências, concorrência
-│   ├── estrategista.py        # Temas, pilares, calendário
-│   ├── planejador.py          # Roteiros, copies, CTAs
-│   └── revisor.py             # Validação + score
-├── services/                  # Business logic
-│   ├── pdf_service.py         # Gotenberg integration
-│   └── cliente_service.py     # CRUD helpers
-├── providers/                 # External APIs
-│   └── openrouter_client.py   # LLM calls
-├── prompts/                   # System prompts (PT-BR)
-├── templates/                 # HTML/CSS para PDF
-├── tasks/                     # Celery tasks
-└── frameworks/                # Storytelling + pilares
+├── routers/
+│   ├── clientes.py            # CRUD + kick-off/preview (IA extrai perfil)
+│   ├── planejamentos.py       # Gerar/listar/aprovar/ajustar/download PDF
+│   ├── config.py              # Tipos conteúdo, frameworks, focos, destinos, plataformas
+│   └── websocket.py           # Pipeline real-time (10min timeout)
+├── agents/
+│   ├── base_agent.py          # Classe base + parse_json_safe (3 fallbacks)
+│   ├── orchestrator.py        # Pipeline controller (usa session_factory do caller)
+│   ├── pesquisador.py         # Perplexity Sonar (web search real) | temp 0.8
+│   ├── estrategista.py        # Claude Sonnet | temp 0.6 | usa foco/destino/plataformas
+│   ├── planejador.py          # Claude Sonnet | temp 0.7 | 12288 tokens | 3 few-shot
+│   └── revisor.py             # Claude Sonnet | temp 0.1 | score 0-100 | verifica A/B
+├── services/
+│   ├── pdf_service.py         # Gotenberg (HTML→PDF) + Jinja2 template
+│   ├── cliente_service.py     # CRUD helpers
+│   └── storage_service.py     # Path validation
+├── providers/
+│   └── openrouter_client.py   # HTTP/2 client, 120s timeout
+├── prompts/                   # System prompts detalhados (PT-BR)
+├── templates/                 # HTML/CSS profissional para PDF
+├── tasks/
+│   ├── celery_app.py          # Config (10min timeout, Redis db 1)
+│   └── generation_tasks.py    # Pipeline async + PDF generation + delete old conteudos
+└── frameworks/                # Storytelling (AIDA/PAS/HSO) + pilares
 ```
 
 ## Pipeline de Agents
-1. **Pesquisador** (Haiku) — tendências, datas comemorativas, concorrência, viral
-2. **Estrategista** (Sonnet) — define temas, pilares, calendário de publicação
-3. **Planejador** (Sonnet) — gera roteiros, copies, CTAs com frameworks (AIDA/PAS/HSO)
-4. **Revisor** (Sonnet) — valida tom, CTAs, pilares, score 0-100 (loop se < 70)
+1. **Pesquisador** (Perplexity Sonar) — web search real: tendências, concorrentes, viral, sazonalidade
+2. **Estrategista** (Sonnet, temp 0.6) — temas por pilar, calendário, anti-repetição, usa foco/destino
+3. **Planejador** (Sonnet, temp 0.7, 12288 tokens) — roteiros, copies, CTAs, frameworks variados, A/B
+4. **Revisor** (Sonnet, temp 0.1) — score 0-100, valida tom/CTAs/pilares, loop se < 70
+
+## Configuração do Planejamento
+Ao criar um planejamento, o operador define:
+- **Foco**: Geração de Leads | Vendas E-commerce | Crescimento Orgânico | Branding | Lançamento | Retenção
+- **Destino**: WhatsApp | Site | DM Instagram | Loja Online | Agendamento | Telefone
+- **Tipo**: Orgânico | Pago (Ads) | Ambos
+- **Plataformas**: Instagram, TikTok, YouTube, LinkedIn, Facebook
+
+## Kick Off Inteligente
+- Operador cola respostas do Google Forms ou anotações da reunião
+- IA extrai automaticamente: nome, nicho, público, tom, pilares, concorrentes, tipos conteúdo
+- Preview editável antes de salvar
+- 31 perguntas mapeadas do formulário Kick Off da agência
 
 ## Deploy
 ```bash
-# Portainer Stack — restart via API
-curl -X POST "http://PORTAINER_IP:9000/api/stacks/STACK_ID/stop?endpointId=1" -H "X-API-Key: KEY"
-curl -X POST "http://PORTAINER_IP:9000/api/stacks/STACK_ID/start?endpointId=1" -H "X-API-Key: KEY"
+# Portainer Stack 33 — restart via API
+API_KEY="ptr_2bJkq4BVfY+LuE5WWbUryyK11OQQmsDIiAeVn6aLN/k="
+curl -X POST "https://porto.dynamicagents.tech/api/stacks/33/stop?endpointId=1" -H "X-API-Key: $API_KEY"
+curl -X POST "https://porto.dynamicagents.tech/api/stacks/33/start?endpointId=1" -H "X-API-Key: $API_KEY"
 ```
 
 ## Convenções
 - **Idioma**: Todo código e prompts em Português (PT-BR)
-- **Backend**: async/await everywhere, type hints, Pydantic v2
-- **Frontend**: TypeScript strict, Tailwind utility-first, sem CSS modules
+- **Backend**: async/await, type hints, Pydantic v2, parse_json_safe para LLM responses
+- **Frontend**: TypeScript strict, Tailwind utility-first
 - **Commits**: Português, imperativo ("Adiciona endpoint X", "Corrige bug Y")
-- **Testes**: pytest + httpx para backend, vitest para frontend
+- **Agents**: Cada agent usa temperature otimizada para seu papel
+- **API Keys**: Apenas no Portainer (NUNCA no código ou .env.example)
+
+## Gotchas
+- Containers fazem `git clone` no startup (~3min para npm install)
+- Redis db 1 (db 0 é do Designer Agent)
+- Se stack reinicia durante geração, task Celery se perde — status fica "em_geracao" para sempre
+- Perplexity Sonar não suporta response_format — usar parse_json_safe
+- Vite precisa de allowedHosts para domínio de produção

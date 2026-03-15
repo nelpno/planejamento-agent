@@ -35,6 +35,10 @@ class Planejamento(Base):
     html_content: Mapped[str | None] = mapped_column(Text, nullable=True)
     pipeline_logs: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     pipeline_duration: Mapped[float | None] = mapped_column(nullable=True)
+    foco: Mapped[str | None] = mapped_column(nullable=True)
+    destino_conversao: Mapped[str | None] = mapped_column(nullable=True)
+    tipo_conteudo_uso: Mapped[str | None] = mapped_column(nullable=True)
+    plataformas: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         server_default=func.now(), nullable=False
     )

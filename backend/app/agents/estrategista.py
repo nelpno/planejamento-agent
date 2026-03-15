@@ -71,6 +71,15 @@ class EstrategistaAgent(BaseAgent):
         if context.inputs_extras:
             user_prompt += f"Inputs extras do usuario: {context.inputs_extras}\n\n"
 
+        if context.foco:
+            user_prompt += f"\nFOCO DO MES: {context.foco}\n"
+        if context.destino_conversao:
+            user_prompt += f"\nDESTINO DA CONVERSAO: {context.destino_conversao} — Todos os CTAs devem direcionar para: {context.destino_conversao}\n"
+        if context.tipo_conteudo_uso:
+            user_prompt += f"\nTIPO DE USO: {context.tipo_conteudo_uso}\n"
+        if context.plataformas:
+            user_prompt += f"\nPLATAFORMAS: {', '.join(context.plataformas)} — Adapte formatos para estas plataformas\n"
+
         if cliente.instrucoes:
             user_prompt += f"Instrucoes do cliente: {cliente.instrucoes}\n"
 

@@ -146,6 +146,27 @@ class PlanejadorAgent(BaseAgent):
             f"Resumo estrategico: {estrategia.resumo_estrategico if estrategia else ''}\n"
         )
 
+        if context.foco:
+            user_prompt += f"\nFOCO DO MES: {context.foco}\n"
+            if context.foco == "vendas_ecommerce":
+                user_prompt += "CTAs devem direcionar para compra, usar urgencia e escassez\n"
+            elif context.foco == "geracao_leads":
+                user_prompt += "CTAs devem captar contato, usar prova social\n"
+        if context.destino_conversao:
+            user_prompt += f"\nDESTINO DA CONVERSAO: {context.destino_conversao} — Todos os CTAs devem direcionar para: {context.destino_conversao}\n"
+            if context.destino_conversao == "whatsapp":
+                user_prompt += "Todos os CTAs devem incluir chamada para WhatsApp\n"
+            elif context.destino_conversao == "loja_online":
+                user_prompt += "CTAs devem incluir 'link na bio', 'compre agora', mencionar site\n"
+        if context.tipo_conteudo_uso:
+            user_prompt += f"\nTIPO DE USO: {context.tipo_conteudo_uso}\n"
+            if context.tipo_conteudo_uso == "pago":
+                user_prompt += "Copies curtas e diretas, hooks nos primeiros 3 segundos, formato ads\n"
+            elif context.tipo_conteudo_uso == "organico":
+                user_prompt += "Tom mais natural, storytelling, hashtags relevantes\n"
+        if context.plataformas:
+            user_prompt += f"\nPLATAFORMAS: {', '.join(context.plataformas)} — Adapte formatos para estas plataformas\n"
+
         if cliente.instrucoes:
             user_prompt += f"\nInstrucoes do cliente: {cliente.instrucoes}\n"
 

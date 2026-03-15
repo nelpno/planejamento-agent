@@ -28,6 +28,10 @@ export interface Planejamento {
   pdf_url: string | null;
   pipeline_logs: Record<string, any> | null;
   pipeline_duration: number | null;
+  foco: string | null;
+  destino_conversao: string | null;
+  tipo_conteudo_uso: string | null;
+  plataformas: string[] | null;
   created_at: string;
   updated_at: string;
 }

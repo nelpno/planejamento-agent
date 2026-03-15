@@ -69,6 +69,11 @@ class RevisorAgent(BaseAgent):
             f"{json.dumps(conteudos_para_revisao, ensure_ascii=False, indent=2)}\n"
         )
 
+        if context.destino_conversao:
+            user_prompt += f"\nVERIFIQUE: Todos os CTAs direcionam para {context.destino_conversao}?\n"
+        if context.foco:
+            user_prompt += f"\nVERIFIQUE: O conteudo esta alinhado com o foco: {context.foco}?\n"
+
         if context.estrategia:
             user_prompt += (
                 f"\nEstrategia definida:\n"
