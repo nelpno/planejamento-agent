@@ -133,14 +133,14 @@
 
             {% if item.conteudo %}
             <div class="arte-content">
-                {% if item.conteudo.titulo_arte or item.conteudo.titulo %}
-                <div class="arte-headline">{{ item.conteudo.titulo_arte or item.conteudo.titulo }}</div>
+                {% if item.conteudo.get("titulo_arte") or item.conteudo.get("titulo") %}
+                <div class="arte-headline">{{ item.conteudo.get("titulo_arte") or item.conteudo.get("titulo") }}</div>
                 {% endif %}
-                {% if item.conteudo.copy %}
-                <div class="arte-copy">{{ item.conteudo.copy }}</div>
+                {% if item.conteudo.get("copy") %}
+                <div class="arte-copy">{{ item.conteudo.get("copy") }}</div>
                 {% endif %}
-                {% if item.conteudo.cta_botao or item.conteudo.cta %}
-                <div class="arte-cta">CTA botão: {{ item.conteudo.cta_botao or item.conteudo.cta }}</div>
+                {% if item.conteudo.get("cta_botao") or item.conteudo.get("cta") %}
+                <div class="arte-cta">CTA botão: {{ item.conteudo.get("cta_botao") or item.conteudo.get("cta") }}</div>
                 {% endif %}
                 {% if item.conteudo.hashtags %}
                 <div class="duracao">{{ item.conteudo.hashtags | join(' ') }}</div>
