@@ -825,7 +825,6 @@ export default function KickOff() {
           </button>
         )}
       </div>
-    </div>
         </>
       )}
     </div>
