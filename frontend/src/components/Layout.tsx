@@ -76,7 +76,7 @@ export default function Layout() {
       >
         {/* Logo */}
         <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
-          <img src="/logopmax.png" alt="PMAX" className="w-10 h-10 object-contain" />
+          <img src="/logopmaxclaro.png" alt="PMAX" className="w-10 h-10 object-contain" />
           <div>
             <h1 className="font-bold text-lg leading-tight">PMAX</h1>
             <p className="text-xs text-gray-400">Planejamento</p>

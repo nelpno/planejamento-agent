@@ -84,6 +84,22 @@ export default function PlanejamentoDetail() {
     }
   }
 
+  async function handleRefazer() {
+    if (!id) return;
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      await api.post(`/planejamentos/${id}/ajustar`, { feedback: 'Refazer planejamento completo' });
+      setPipelineLogs([]);
+      setConteudos([]);
+      fetchData();
+    } catch (err: any) {
+      setActionError(err?.response?.data?.detail || 'Erro ao refazer. Tente novamente.');
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
   async function handleAprovar() {
     if (!id) return;
     setActionLoading(true);
@@ -169,6 +185,37 @@ export default function PlanejamentoDetail() {
       {planejamento.status === 'em_geracao' && (
         <div className="mb-8">
           <PipelineProgress logs={pipelineLogs} currentAgent={currentAgent} />
+          {/* Show retry button if stuck for >5 min */}
+          {planejamento.created_at && (Date.now() - new Date(planejamento.created_at).getTime()) > 5 * 60 * 1000 && (
+            <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm text-amber-800 mb-3">O pipeline parece estar travado. Pode ter sido interrompido por um restart.</p>
+              <button
+                onClick={() => handleRefazer()}
+                disabled={actionLoading}
+                className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 disabled:opacity-50"
+              >
+                Refazer Planejamento
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Failed - Show error and retry */}
+      {planejamento.status === 'failed' && (
+        <div className="card mb-8 border-red-200 bg-red-50">
+          <h2 className="text-lg font-bold text-red-700 mb-2">Falha na Geração</h2>
+          <p className="text-sm text-red-600 mb-4">{planejamento.feedback || 'O pipeline encontrou um erro durante a geração.'}</p>
+          <button
+            onClick={() => handleRefazer()}
+            disabled={actionLoading}
+            className="px-6 py-2.5 bg-accent text-white rounded-lg font-medium hover:bg-accent/90 disabled:opacity-50 flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Tentar Novamente
+          </button>
         </div>
       )}
 
