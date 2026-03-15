@@ -89,10 +89,10 @@ export default function PlanejamentoDetail() {
     setActionLoading(true);
     setActionError(null);
     try {
-      await api.post(`/planejamentos/${id}/ajustar`, { feedback: 'Refazer planejamento completo' });
+      await api.post(`/planejamentos/${id}/regerar`);
       setPipelineLogs([]);
       setConteudos([]);
-      fetchData();
+      await fetchData();
     } catch (err: any) {
       setActionError(err?.response?.data?.detail || 'Erro ao refazer. Tente novamente.');
     } finally {
@@ -121,7 +121,9 @@ export default function PlanejamentoDetail() {
     setActionError(null);
     try {
       await api.post(`/planejamentos/${id}/ajustar`, { feedback });
-      fetchData();
+      setPipelineLogs([]);
+      setConteudos([]);
+      await fetchData();
     } catch (err: any) {
       console.error('Erro ao enviar feedback:', err);
       setActionError(err?.response?.data?.detail || 'Erro ao enviar feedback. Tente novamente.');
@@ -129,6 +131,11 @@ export default function PlanejamentoDetail() {
       setActionLoading(false);
     }
   }
+
+  // Detect if this is an ajuste pipeline (vs full generation)
+  const isAjuste = pipelineLogs.some(l =>
+    l.agent_name.toLowerCase().includes('ajustador')
+  ) || (planejamento?.feedback != null && planejamento?.status === 'em_geracao');
 
   // Group conteudos by tipo
   const conteudosByTipo = conteudos.reduce<Record<string, Conteudo[]>>((acc, c) => {
@@ -184,7 +191,7 @@ export default function PlanejamentoDetail() {
       {/* Em geração - Pipeline */}
       {planejamento.status === 'em_geracao' && (
         <div className="mb-8">
-          <PipelineProgress logs={pipelineLogs} currentAgent={currentAgent} />
+          <PipelineProgress logs={pipelineLogs} currentAgent={currentAgent} isAjuste={isAjuste} />
           {/* Show retry button if stuck for >5 min */}
           {planejamento.created_at && (Date.now() - new Date(planejamento.created_at).getTime()) > 5 * 60 * 1000 && (
             <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">

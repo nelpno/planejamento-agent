@@ -8,6 +8,11 @@ const PIPELINE_STEPS = [
   { key: 'revisor', label: 'Revisor', icon: ReviewIcon },
 ];
 
+const AJUSTE_STEPS = [
+  { key: 'ajustador', label: 'Ajustador', icon: PlanIcon },
+  { key: 'revisor', label: 'Revisor', icon: ReviewIcon },
+];
+
 function SearchIcon() {
   return (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -49,9 +54,10 @@ type StepStatus = 'waiting' | 'running' | 'done' | 'error';
 interface PipelineProgressProps {
   logs: PipelineLog[];
   currentAgent?: string;
+  isAjuste?: boolean;
 }
 
-export default function PipelineProgress({ logs, currentAgent }: PipelineProgressProps) {
+export default function PipelineProgress({ logs, currentAgent, isAjuste }: PipelineProgressProps) {
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
 
   function getStepStatus(stepKey: string): StepStatus {
@@ -89,10 +95,12 @@ export default function PipelineProgress({ logs, currentAgent }: PipelineProgres
 
   return (
     <div className="card">
-      <h3 className="text-lg font-bold text-primary mb-6">Pipeline de Geração</h3>
+      <h3 className="text-lg font-bold text-primary mb-6">
+        {isAjuste ? 'Pipeline de Ajuste' : 'Pipeline de Geração'}
+      </h3>
 
       <div className="space-y-4">
-        {PIPELINE_STEPS.map((step, index) => {
+        {(isAjuste ? AJUSTE_STEPS : PIPELINE_STEPS).map((step, index) => {
           const status = getStepStatus(step.key);
           const stepLogs = getStepLogs(step.key);
           const isExpanded = expandedStep === step.key;

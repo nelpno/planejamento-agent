@@ -6,7 +6,7 @@ from docx import Document
 from docx.shared import Pt, Inches, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-_logo_path = os.path.join(os.path.dirname(__file__), "..", "templates", "logopmax.png")
+_logo_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "templates", "logopmax.png"))
 
 
 def generate_planejamento_docx(

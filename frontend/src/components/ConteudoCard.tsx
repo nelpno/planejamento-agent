@@ -49,8 +49,10 @@ export default function ConteudoCard({ conteudo }: ConteudoCardProps) {
             {conteudo.conteudo.capa && (
               <div className="bg-accent/5 border border-accent/20 rounded-lg p-4">
                 <p className="text-xs font-bold text-accent uppercase mb-1">Capa</p>
-                <p className="font-bold text-primary">{conteudo.conteudo.capa.titulo || conteudo.conteudo.capa}</p>
-                {conteudo.conteudo.capa.subtitulo && (
+                <p className="font-bold text-primary">
+                  {typeof conteudo.conteudo.capa === 'string' ? conteudo.conteudo.capa : conteudo.conteudo.capa?.titulo || ''}
+                </p>
+                {typeof conteudo.conteudo.capa === 'object' && conteudo.conteudo.capa?.subtitulo && (
                   <p className="text-sm text-gray-600 mt-1">{conteudo.conteudo.capa.subtitulo}</p>
                 )}
               </div>

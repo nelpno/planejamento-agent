@@ -827,7 +827,7 @@ export default function KickOff() {
 
           <div className="flex justify-between mt-8 pt-6 border-t">
             <button
-              onClick={() => { setPreview(null); }}
+              onClick={() => { setPreview(null); handlePasteGenerate(); }}
               className="px-6 py-2.5 border border-gray-300 text-gray-600 rounded-lg font-medium hover:bg-gray-50"
             >
               Gerar Novamente

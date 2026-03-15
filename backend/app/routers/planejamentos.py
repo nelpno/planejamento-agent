@@ -172,12 +172,12 @@ async def aprovar_planejamento(
     return {"status": "aprovado"}
 
 
-@router.post("/{planejamento_id}/ajustar")
-async def ajustar_planejamento(
+@router.post("/{planejamento_id}/regerar")
+async def regerar_planejamento(
     planejamento_id: uuid.UUID,
-    data: PlanejamentoUpdate,
     session: AsyncSession = Depends(get_session),
 ):
+    """Re-run the FULL pipeline from scratch (Pesquisador → Estrategista → Planejador → Revisor)."""
     result = await session.execute(
         select(Planejamento).where(Planejamento.id == planejamento_id)
     )
@@ -185,10 +185,6 @@ async def ajustar_planejamento(
     if not planejamento:
         raise HTTPException(status_code=404, detail="Planejamento não encontrado")
 
-    planejamento.status = "em_geracao"
-    planejamento.feedback = data.feedback
-
-    # Re-dispatch pipeline with feedback
     result = await session.execute(
         select(Cliente).where(Cliente.id == planejamento.cliente_id)
     )
@@ -206,7 +202,71 @@ async def ajustar_planejamento(
         for h in historico
     ]
 
+    tipos_conteudo = cliente.tipos_conteudo or []
+
+    planejamento.status = "em_geracao"
+    planejamento.feedback = None
+
     from app.agents.context import PipelineContext, ClienteData
+    context = PipelineContext(
+        planejamento_id=str(planejamento.id),
+        cliente=ClienteData(
+            id=str(cliente.id),
+            nome_empresa=cliente.nome_empresa,
+            nicho=cliente.nicho,
+            publico_alvo=cliente.publico_alvo or {},
+            tom_de_voz=cliente.tom_de_voz or {},
+            pilares=cliente.pilares or [],
+            tipos_conteudo=tipos_conteudo,
+            concorrentes=cliente.concorrentes or [],
+            instrucoes=cliente.instrucoes,
+        ),
+        mes_referencia=planejamento.mes_referencia,
+        inputs_extras=planejamento.inputs_extras,
+        historico_temas=historico_temas,
+        foco=planejamento.foco,
+        destino_conversao=planejamento.destino_conversao,
+        tipo_conteudo_uso=planejamento.tipo_conteudo_uso,
+        plataformas=planejamento.plataformas or [],
+    )
+
+    await session.commit()
+
+    from app.tasks.generation_tasks import generate_planejamento_task
+    generate_planejamento_task.delay(str(planejamento.id), context.to_dict())
+
+    return {"status": "em_geracao", "message": "Regenerando planejamento completo"}
+
+
+@router.post("/{planejamento_id}/ajustar")
+async def ajustar_planejamento(
+    planejamento_id: uuid.UUID,
+    data: PlanejamentoUpdate,
+    session: AsyncSession = Depends(get_session),
+):
+    result = await session.execute(
+        select(Planejamento).where(Planejamento.id == planejamento_id)
+    )
+    planejamento = result.scalar_one_or_none()
+    if not planejamento:
+        raise HTTPException(status_code=404, detail="Planejamento não encontrado")
+
+    planejamento.status = "em_geracao"
+    planejamento.feedback = data.feedback
+
+    # Load client data
+    result = await session.execute(
+        select(Cliente).where(Cliente.id == planejamento.cliente_id)
+    )
+    cliente = result.scalar_one_or_none()
+
+    # Load existing conteudos to pass to Ajustador
+    conteudos_result = await session.execute(
+        select(Conteudo).where(Conteudo.planejamento_id == planejamento_id).order_by(Conteudo.ordem)
+    )
+    conteudos_existentes = conteudos_result.scalars().all()
+
+    from app.agents.context import PipelineContext, ClienteData, ConteudoGerado
     context = PipelineContext(
         planejamento_id=str(planejamento.id),
         cliente=ClienteData(
@@ -221,20 +281,34 @@ async def ajustar_planejamento(
             instrucoes=cliente.instrucoes,
         ),
         mes_referencia=planejamento.mes_referencia,
-        inputs_extras=f"{planejamento.inputs_extras or ''}\n\nFEEDBACK DO OPERADOR:\n{data.feedback}",
-        historico_temas=historico_temas,
+        inputs_extras=data.feedback,  # Feedback goes as input for Ajustador
         foco=planejamento.foco,
         destino_conversao=planejamento.destino_conversao,
         tipo_conteudo_uso=planejamento.tipo_conteudo_uso,
         plataformas=planejamento.plataformas or [],
+        # Pass existing conteudos so Ajustador can modify them
+        conteudos=[
+            ConteudoGerado(
+                tipo=c.tipo,
+                pilar=c.pilar or "",
+                framework=c.framework or "",
+                titulo=c.titulo,
+                conteudo=c.conteudo,
+                variacoes_ab=c.variacoes_ab or [],
+                referencia_visual=c.referencia_visual or "",
+                ordem=c.ordem,
+            )
+            for c in conteudos_existentes
+        ],
     )
 
-    await session.commit()  # Fix #2: commit before dispatch
+    await session.commit()
 
-    from app.tasks.generation_tasks import generate_planejamento_task
-    generate_planejamento_task.delay(str(planejamento.id), context.to_dict())
+    # Use ajustar task (Ajustador + Revisor) instead of full pipeline
+    from app.tasks.generation_tasks import ajustar_planejamento_task
+    ajustar_planejamento_task.delay(str(planejamento.id), context.to_dict())
 
-    return {"status": "em_geracao", "message": "Planejamento sendo refeito com feedback"}
+    return {"status": "em_geracao", "message": "Ajustando planejamento com feedback (Ajustador + Revisor)"}
 
 
 @router.get("/{planejamento_id}/download")

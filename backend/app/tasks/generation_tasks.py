@@ -15,12 +15,19 @@ from app.tasks.celery_app import celery_app
 logger = logging.getLogger(__name__)
 
 
-# Fix #1: Use asyncio.run() instead of manual event loop management
 @celery_app.task(bind=True, name="generate_planejamento")
 def generate_planejamento_task(self, planejamento_id: str, pipeline_context_dict: dict):
-    """Celery task that runs the planning pipeline."""
+    """Celery task that runs the full planning pipeline."""
     return asyncio.run(
         _run_pipeline(self, planejamento_id, pipeline_context_dict)
+    )
+
+
+@celery_app.task(bind=True, name="ajustar_planejamento")
+def ajustar_planejamento_task(self, planejamento_id: str, pipeline_context_dict: dict):
+    """Celery task that runs Ajustador + Revisor (without re-researching)."""
+    return asyncio.run(
+        _run_ajuste_pipeline(self, planejamento_id, pipeline_context_dict)
     )
 
 
@@ -72,6 +79,74 @@ async def _run_pipeline(task, planejamento_id: str, pipeline_context_dict: dict)
         pass
 
 
+async def _run_ajuste_pipeline(task, planejamento_id: str, pipeline_context_dict: dict):
+    """Ajuste pipeline: Ajustador → Revisor (sem Pesquisador/Estrategista)."""
+    session_factory = AsyncSessionLocal
+
+    try:
+        await _update_planejamento_status(session_factory, planejamento_id, "em_geracao")
+
+        context = PipelineContext.from_dict(pipeline_context_dict)
+        context.started_at = datetime.now(timezone.utc).isoformat()
+
+        # Guard: ajuste requires existing conteudos
+        if not context.conteudos:
+            raise ValueError(
+                "Ajuste requer conteúdos existentes. Use o pipeline completo para gerar do zero."
+            )
+
+        from app.agents.ajustador import AjustadorAgent
+        from app.agents.revisor import RevisorAgent
+        from app.providers.openrouter_client import OpenRouterClient
+
+        client = OpenRouterClient()
+        try:
+            # Step 1: Ajustador modifica conteúdo com base no feedback
+            ajustador = AjustadorAgent(client)
+            context = await ajustador.run(context)
+
+            # Step 2: Revisor valida as mudanças
+            revisor = RevisorAgent(client)
+            context = await revisor.run(context)
+
+            # Apply revised contents if available
+            if context.revisao and context.revisao.conteudos_revisados:
+                from app.agents.context import ConteudoGerado
+                context.conteudos = [
+                    ConteudoGerado(
+                        tipo=c.get("tipo", ""),
+                        pilar=c.get("pilar", ""),
+                        framework=c.get("framework", ""),
+                        titulo=c.get("titulo", ""),
+                        conteudo=c.get("conteudo", {}),
+                        variacoes_ab=c.get("variacoes_ab", []),
+                        referencia_visual=c.get("referencia_visual", ""),
+                        ordem=c.get("ordem", i),
+                    )
+                    for i, c in enumerate(context.revisao.conteudos_revisados)
+                ]
+        finally:
+            await client.close()
+
+        context.completed_at = datetime.now(timezone.utc).isoformat()
+        await _save_results(session_factory, planejamento_id, context)
+
+        logger.info(
+            "Ajuste completed for %s (score: %d)",
+            planejamento_id,
+            context.revisao.score if context.revisao else 0,
+        )
+        return {"planejamento_id": planejamento_id, "status": "revisao"}
+
+    except Exception as e:
+        logger.exception("Ajuste failed for %s: %s", planejamento_id, str(e))
+        try:
+            await _update_planejamento_status(session_factory, planejamento_id, "failed", error=str(e))
+        except Exception:
+            pass
+        raise
+
+
 async def _update_planejamento_status(
     session_factory, planejamento_id: str, status: str, error: str | None = None,
 ):
@@ -113,22 +188,21 @@ async def _save_results(session_factory, planejamento_id: str, context: Pipeline
             sql_delete(Conteudo).where(Conteudo.planejamento_id == plan_id)
         )
 
-        # Update planejamento with results
-        stmt = (
-            update(Planejamento)
-            .where(Planejamento.id == plan_id)
-            .values(
-                status="revisao",
-                resumo_estrategico=(
-                    context.estrategia.resumo_estrategico if context.estrategia else None
-                ),
-                temas=context.estrategia.temas if context.estrategia else None,
-                calendario=context.estrategia.calendario if context.estrategia else None,
-                pesquisa=asdict(context.pesquisa) if context.pesquisa else None,
-                pipeline_logs=[asdict(entry) for entry in context.decision_log],
-                pipeline_duration=pipeline_duration,
-            )
-        )
+        # Update planejamento with results — only overwrite strategy fields if they exist
+        # (during ajuste, estrategia/pesquisa are None — don't erase existing data)
+        values = {
+            "status": "revisao",
+            "pipeline_logs": [asdict(entry) for entry in context.decision_log],
+            "pipeline_duration": pipeline_duration,
+        }
+        if context.estrategia:
+            values["resumo_estrategico"] = context.estrategia.resumo_estrategico
+            values["temas"] = context.estrategia.temas
+            values["calendario"] = context.estrategia.calendario
+        if context.pesquisa:
+            values["pesquisa"] = asdict(context.pesquisa)
+
+        stmt = update(Planejamento).where(Planejamento.id == plan_id).values(**values)
         await session.execute(stmt)
 
         # Save generated content pieces
