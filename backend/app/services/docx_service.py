@@ -218,7 +218,7 @@ def generate_planejamento_docx(
     doc.add_paragraph("")
     footer = doc.add_paragraph()
     footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = footer.add_run("PMAX Agência Digital | Planejamento gerado com IA")
+    run = footer.add_run("PMAX Marketing de Performance")
     run.font.size = Pt(9)
     run.font.color.rgb = RGBColor(0x88, 0x88, 0x88)
 
