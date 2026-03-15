@@ -20,11 +20,11 @@ class Settings(BaseSettings):
     LLM_MODEL_FAST: str = "anthropic/claude-haiku-4.5"
     LLM_MODEL_SEARCH: str = "perplexity/sonar-pro"  # Web search nativo
 
-    # Database
-    DATABASE_URL: str = "postgresql+asyncpg://planner:password@postgres:5432/planejamento_agent"
+    # Database (no default — must be set via env)
+    DATABASE_URL: str
 
-    # Redis
-    REDIS_URL: str = "redis://redis:6379/0"
+    # Redis (no default — must be set via env)
+    REDIS_URL: str
 
     # Storage
     STORAGE_PATH: str = "/app/storage"

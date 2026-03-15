@@ -14,6 +14,8 @@ from app.routers import clientes, planejamentos, config, websocket
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan: initialise DB on startup."""
+    if not settings.DEBUG and not settings.API_SECRET_KEY:
+        raise RuntimeError("API_SECRET_KEY must be set in production (DEBUG=false)")
     await init_db()
     yield
 
@@ -47,7 +49,7 @@ async def require_api_key(request: Request, call_next):
         return await call_next(request)
 
     path = request.url.path
-    if path in ("/health", "/docs", "/redoc", "/openapi.json") or path.startswith("/storage/"):
+    if path in ("/health", "/docs", "/redoc", "/openapi.json"):
         return await call_next(request)
 
     if path.startswith("/api") or path.startswith("/ws"):

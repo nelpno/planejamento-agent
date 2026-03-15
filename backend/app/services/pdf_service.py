@@ -8,10 +8,14 @@ from app.config import settings
 
 # Jinja2 template environment
 _template_dir = os.path.join(os.path.dirname(__file__), "..", "templates")
-_jinja_env = Environment(loader=FileSystemLoader(_template_dir))
+from jinja2 import select_autoescape
+_jinja_env = Environment(
+    loader=FileSystemLoader(_template_dir),
+    autoescape=select_autoescape(["html", "htm"]),
+)
 
 # Pre-load logo as base64
-_logo_path = os.path.join(_template_dir, "logopmax.png")
+_logo_path = os.path.join(_template_dir, "logopmaxclaro.png")
 _logo_b64 = ""
 if os.path.exists(_logo_path):
     with open(_logo_path, "rb") as f:

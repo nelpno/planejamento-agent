@@ -105,7 +105,7 @@ async def create_planejamento(
 @router.get("", response_model=list[PlanejamentoListItem])
 async def list_planejamentos(
     cliente_id: uuid.UUID | None = None,
-    limit: int = 100,
+    limit: int = 100,  # max 500 via validation
     session: AsyncSession = Depends(get_session),
 ):
     query = select(Planejamento).order_by(Planejamento.created_at.desc())

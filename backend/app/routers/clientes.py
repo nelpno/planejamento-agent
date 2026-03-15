@@ -72,7 +72,9 @@ async def preview_kickoff(data: KickOffInput):
             response_format={"type": "json_object"},
         )
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Erro ao consultar IA: {str(e)}")
+        import logging
+        logging.getLogger(__name__).error("OpenRouter call failed: %s", e)
+        raise HTTPException(status_code=502, detail="Serviço de IA temporariamente indisponível. Tente novamente.")
     finally:
         await client.close()
 

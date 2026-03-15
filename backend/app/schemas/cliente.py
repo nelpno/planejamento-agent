@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ClienteCreate(BaseModel):
@@ -22,7 +22,7 @@ class ClienteCreate(BaseModel):
 class KickOffInput(BaseModel):
     nome_empresa: str | None = None  # IA extrai do texto se não informado
     nicho: str | None = None  # IA extrai do texto se não informado
-    kickoff_text: str  # All kick-off answers as free text
+    kickoff_text: str = Field(..., min_length=10, max_length=20_000)
 
 
 class ClienteUpdate(BaseModel):

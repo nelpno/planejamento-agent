@@ -16,7 +16,7 @@ class ConteudoResponse(BaseModel):
     framework: str | None = None
     titulo: str
     conteudo: dict
-    variacoes_ab: dict | None = None
+    variacoes_ab: list | None = None
     referencia_visual: str | None = None
     ordem: int
     created_at: datetime
