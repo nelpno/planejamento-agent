@@ -5,14 +5,21 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 
 from sqlalchemy import delete as sql_delete, update
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.agents.context import PipelineContext
 from app.agents.orchestrator import PipelineOrchestrator
-from app.database import AsyncSessionLocal
+from app.config import get_settings
 from app.tasks.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
+
+
+def _create_session_factory():
+    """Create a fresh engine+session for Celery worker (separate event loop)."""
+    settings = get_settings()
+    engine = create_async_engine(settings.DATABASE_URL, echo=False, pool_pre_ping=True, pool_size=5, max_overflow=10)
+    return engine, async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 
 
 @celery_app.task(bind=True, name="generate_planejamento")
@@ -33,7 +40,7 @@ def ajustar_planejamento_task(self, planejamento_id: str, pipeline_context_dict:
 
 async def _run_pipeline(task, planejamento_id: str, pipeline_context_dict: dict):
     """Async pipeline execution."""
-    session_factory = AsyncSessionLocal
+    engine, session_factory = _create_session_factory()
 
     try:
         await _update_planejamento_status(
@@ -76,12 +83,12 @@ async def _run_pipeline(task, planejamento_id: str, pipeline_context_dict: dict)
         raise
 
     finally:
-        pass
+        await engine.dispose()
 
 
 async def _run_ajuste_pipeline(task, planejamento_id: str, pipeline_context_dict: dict):
     """Ajuste pipeline: Ajustador → Revisor (sem Pesquisador/Estrategista)."""
-    session_factory = AsyncSessionLocal
+    engine, session_factory = _create_session_factory()
 
     try:
         await _update_planejamento_status(session_factory, planejamento_id, "em_geracao")
@@ -109,8 +116,8 @@ async def _run_ajuste_pipeline(task, planejamento_id: str, pipeline_context_dict
             revisor = RevisorAgent(client)
             context = await revisor.run(context)
 
-            # Apply revised contents if available
-            if context.revisao and context.revisao.conteudos_revisados:
+            # Apply revised contents only if Revisor returned ALL pieces
+            if context.revisao and context.revisao.conteudos_revisados and len(context.revisao.conteudos_revisados) >= len(context.conteudos):
                 from app.agents.context import ConteudoGerado
                 context.conteudos = [
                     ConteudoGerado(

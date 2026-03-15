@@ -52,8 +52,8 @@ class PipelineOrchestrator:
                 await self._save_progress(context, "revisor")
 
                 if context.revisao and context.revisao.aprovado:
-                    # Apply revised contents from Revisor if available
-                    if context.revisao.conteudos_revisados:
+                    # Apply revised contents only if Revisor returned ALL pieces
+                    if context.revisao.conteudos_revisados and len(context.revisao.conteudos_revisados) >= len(context.conteudos):
                         from app.agents.context import ConteudoGerado
                         context.conteudos = [
                             ConteudoGerado(
