@@ -139,6 +139,10 @@ export default function KickOff() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Cliente | null>(null);
   const [error, setError] = useState('');
+  const [mode, setMode] = useState<'manual' | 'paste' | null>(null);
+  const [pasteText, setPasteText] = useState('');
+  const [pasteNome, setPasteNome] = useState('');
+  const [pasteNicho, setPasteNicho] = useState('');
 
   function updateField(field: keyof KickOffForm, value: string | string[]) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -178,10 +182,32 @@ export default function KickOff() {
     }
   }
 
+  async function handlePasteGenerate() {
+    if (!pasteNome.trim() || !pasteNicho.trim() || !pasteText.trim()) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await api.post<Cliente>('/clientes/kick-off', {
+        nome_empresa: pasteNome,
+        nicho: pasteNicho,
+        kickoff_text: pasteText,
+      });
+      setResult(res.data);
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || 'Erro ao gerar perfil com IA. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function handleRegenerate() {
     setResult(null);
     setError('');
-    handleGenerate();
+    if (mode === 'paste') {
+      handlePasteGenerate();
+    } else {
+      handleGenerate();
+    }
   }
 
   // Input component helpers
@@ -576,9 +602,125 @@ export default function KickOff() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-primary">Kick Off Inteligente</h1>
-        <p className="text-gray-500 mt-1">Responda as perguntas e a IA criara o perfil do cliente automaticamente</p>
+        <p className="text-gray-500 mt-1">Responda as perguntas e a IA criará o perfil do cliente automaticamente</p>
       </div>
 
+      {/* Mode selector - show only if no mode selected yet and no result */}
+      {!mode && !result && !loading && (
+        <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <button
+            onClick={() => setMode('paste')}
+            className="p-6 border-2 border-gray-200 rounded-xl hover:border-accent hover:shadow-lg transition-all text-left group"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors">
+                <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-bold text-primary">Colar Respostas do Kick Off</h3>
+                <span className="text-xs text-green-600 font-medium">Recomendado</span>
+              </div>
+            </div>
+            <p className="text-sm text-gray-500">Cole todas as respostas do formulário de uma vez. A IA extrai e estrutura automaticamente.</p>
+          </button>
+
+          <button
+            onClick={() => setMode('manual')}
+            className="p-6 border-2 border-gray-200 rounded-xl hover:border-secondary hover:shadow-lg transition-all text-left group"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
+                <svg className="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </div>
+              <h3 className="font-bold text-primary">Preencher Manualmente</h3>
+            </div>
+            <p className="text-sm text-gray-500">Preencha cada campo em 5 etapas guiadas. Ideal para novos clientes sem formulário prévio.</p>
+          </button>
+        </div>
+      )}
+
+      {/* PASTE MODE */}
+      {mode === 'paste' && !result && !loading && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+              <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-primary">Colar Respostas</h2>
+              <p className="text-sm text-gray-500">Cole as respostas do Google Forms ou anotações da reunião</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Nome da Empresa *</label>
+              <input
+                type="text"
+                value={pasteNome}
+                onChange={(e) => setPasteNome(e.target.value)}
+                placeholder="Ex: BGA Advogados"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/30 focus:border-accent outline-none text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Nicho *</label>
+              <input
+                type="text"
+                value={pasteNicho}
+                onChange={(e) => setPasteNicho(e.target.value)}
+                placeholder="Ex: Advocacia Trabalhista"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/30 focus:border-accent outline-none text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Respostas do Kick Off *</label>
+            <textarea
+              value={pasteText}
+              onChange={(e) => setPasteText(e.target.value)}
+              placeholder={"Cole aqui todas as respostas do formulário de Kick Off...\n\nExemplo:\nInstagram: @advocaciabga\nSite: https://advocaciabga.com.br\nSobre a empresa: Escritório de advocacia com foco em direito trabalhista...\nObjetivos: 10 contratos por semana...\nPúblico: Trabalhadores CLT 25-55 anos...\nConcorrentes: Escritório X, Escritório Y...\nPUV: Advocacia especializada e humanizada..."}
+              rows={12}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/30 focus:border-accent outline-none text-sm resize-none font-mono"
+            />
+            <p className="text-xs text-gray-400 mt-1">Pode ser texto livre, respostas copiadas do Google Forms, ou anotações da reunião</p>
+          </div>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
+          )}
+
+          <div className="flex justify-between">
+            <button
+              onClick={() => { setMode(null); setPasteText(''); setPasteNome(''); setPasteNicho(''); }}
+              className="px-6 py-2.5 text-gray-600 hover:text-gray-800 text-sm font-medium"
+            >
+              Voltar
+            </button>
+            <button
+              onClick={handlePasteGenerate}
+              disabled={!pasteNome.trim() || !pasteNicho.trim() || !pasteText.trim()}
+              className="px-8 py-3 bg-accent text-white rounded-lg font-semibold hover:bg-accent/90 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shadow-md shadow-accent/20"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Gerar Perfil com IA
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MANUAL MODE - Progress bar (only show in manual mode) */}
+      {mode === 'manual' && !result && !loading && (
+        <>
       {/* Progress bar */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-3">
@@ -683,6 +825,9 @@ export default function KickOff() {
           </button>
         )}
       </div>
+    </div>
+        </>
+      )}
     </div>
   );
 }
