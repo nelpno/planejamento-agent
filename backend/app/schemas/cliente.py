@@ -19,6 +19,12 @@ class ClienteCreate(BaseModel):
     logo_url: str | None = None
 
 
+class KickOffInput(BaseModel):
+    nome_empresa: str
+    nicho: str
+    kickoff_text: str  # All kick-off answers as free text
+
+
 class ClienteUpdate(BaseModel):
     nome_empresa: str | None = None
     nicho: str | None = None

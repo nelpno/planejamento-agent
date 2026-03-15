@@ -1,13 +1,101 @@
+import json
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import get_session
-from app.schemas.cliente import ClienteCreate, ClienteUpdate, ClienteResponse
+from app.providers.openrouter_client import OpenRouterClient
+from app.schemas.cliente import ClienteCreate, ClienteUpdate, ClienteResponse, KickOffInput
 from app.services import cliente_service
 
 router = APIRouter(prefix="/api/clientes", tags=["clientes"])
+
+KICKOFF_SYSTEM_PROMPT = """Você é um especialista em marketing digital. Analise as respostas do Kick Off de um novo cliente e extraia um perfil estruturado para planejamento de conteúdo.
+
+Retorne APENAS JSON válido com esta estrutura:
+{
+  "publico_alvo": {
+    "descricao": "Descrição detalhada do público-alvo principal",
+    "faixa_etaria": "25-55",
+    "localizacao": "Região/cidade",
+    "dores": ["dor 1", "dor 2", "dor 3"]
+  },
+  "tom_de_voz": {
+    "estilo": "Ex: Profissional e acolhedor",
+    "palavras_chave": ["palavra1", "palavra2"],
+    "evitar": ["termo1", "termo2"]
+  },
+  "pilares": [
+    {"nome": "Nome do Pilar", "percentual": 40, "descricao": "Descrição"},
+    {"nome": "Nome do Pilar", "percentual": 30, "descricao": "Descrição"},
+    {"nome": "Nome do Pilar", "percentual": 20, "descricao": "Descrição"},
+    {"nome": "Nome do Pilar", "percentual": 10, "descricao": "Descrição"}
+  ],
+  "tipos_conteudo": [
+    {"tipo": "video_roteiro", "quantidade": 4, "formato": "Reels/Feed", "duracao": "60-90s"},
+    {"tipo": "arte_estatica", "quantidade": 4, "formato": "Feed"},
+    {"tipo": "carrossel", "quantidade": 2, "slides": "5-7"}
+  ],
+  "concorrentes": [
+    {"nome": "Nome", "instagram": "@handle", "site": "url"}
+  ],
+  "redes_sociais": {"instagram": "@handle", "site": "url"},
+  "instrucoes": "Instruções especiais baseadas no kick-off (PUV, sazonalidade, estratégias que funcionam, etc.)"
+}
+
+Regras:
+- Pilares devem somar 100%
+- Baseie o tom de voz na PUV e na descrição da empresa
+- Extraia concorrentes mencionados
+- As dores devem vir do público-alvo e dos objetivos
+- Tipos de conteúdo devem ser adequados ao nicho
+- Instruções devem incluir PUV, sazonalidade e estratégias vencedoras mencionadas"""
+
+
+@router.post("/kick-off", response_model=ClienteResponse, status_code=201)
+async def create_from_kickoff(
+    data: KickOffInput,
+    session: AsyncSession = Depends(get_session),
+):
+    """Cria um cliente a partir das respostas do Kick Off, usando IA para estruturar os dados."""
+    client = OpenRouterClient()
+    try:
+        response = await client.chat(
+            model=settings.LLM_MODEL,
+            messages=[
+                {"role": "system", "content": KICKOFF_SYSTEM_PROMPT},
+                {"role": "user", "content": data.kickoff_text},
+            ],
+            temperature=0.3,
+            max_tokens=4096,
+            response_format={"type": "json_object"},
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erro ao consultar IA: {str(e)}")
+    finally:
+        await client.close()
+
+    try:
+        perfil = json.loads(response)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=502, detail="Resposta da IA não é JSON válido")
+
+    cliente_data = {
+        "nome_empresa": data.nome_empresa,
+        "nicho": data.nicho,
+        "publico_alvo": perfil.get("publico_alvo"),
+        "tom_de_voz": perfil.get("tom_de_voz"),
+        "pilares": perfil.get("pilares"),
+        "tipos_conteudo": perfil.get("tipos_conteudo"),
+        "concorrentes": perfil.get("concorrentes"),
+        "redes_sociais": perfil.get("redes_sociais"),
+        "instrucoes": perfil.get("instrucoes"),
+    }
+
+    cliente = await cliente_service.create_cliente(session, cliente_data)
+    return cliente
 
 
 @router.post("", response_model=ClienteResponse, status_code=201)
