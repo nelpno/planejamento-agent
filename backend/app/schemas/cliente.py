@@ -1,0 +1,50 @@
+"""Schemas Pydantic para Cliente."""
+
+from datetime import datetime
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict
+
+
+class ClienteCreate(BaseModel):
+    nome_empresa: str
+    nicho: str
+    publico_alvo: dict | None = None
+    tom_de_voz: dict | None = None
+    pilares: list[dict] | None = None
+    tipos_conteudo: list[dict] | None = None
+    concorrentes: list[dict] | None = None
+    redes_sociais: dict | None = None
+    instrucoes: str | None = None
+    logo_url: str | None = None
+
+
+class ClienteUpdate(BaseModel):
+    nome_empresa: str | None = None
+    nicho: str | None = None
+    publico_alvo: dict | None = None
+    tom_de_voz: dict | None = None
+    pilares: list[dict] | None = None
+    tipos_conteudo: list[dict] | None = None
+    concorrentes: list[dict] | None = None
+    redes_sociais: dict | None = None
+    instrucoes: str | None = None
+    logo_url: str | None = None
+
+
+class ClienteResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    nome_empresa: str
+    nicho: str
+    publico_alvo: dict | None = None
+    tom_de_voz: dict | None = None
+    pilares: list[dict] | None = None
+    tipos_conteudo: list[dict] | None = None
+    concorrentes: list[dict] | None = None
+    redes_sociais: dict | None = None
+    instrucoes: str | None = None
+    logo_url: str | None = None
+    created_at: datetime
+    updated_at: datetime | None = None

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planejamento {{ planejamento.mes_referencia }} - {{ cliente.nome_empresa }}</title>
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo-pmax">PMAX</div>
+        </div>
+        <div class="header-center">
+            <h1>PLANEJAMENTO DE CONTEÚDO</h1>
+            <h2>{{ planejamento.mes_referencia | upper }}</h2>
+        </div>
+        <div class="header-right">
+            <div class="cliente-nome">{{ cliente.nome_empresa }}</div>
+        </div>
+    </header>
+
+    <!-- Resumo Estratégico -->
+    {% if planejamento.resumo_estrategico %}
+    <section class="section">
+        <h2 class="section-title">RESUMO ESTRATÉGICO</h2>
+        <div class="resumo-content">
+            {{ planejamento.resumo_estrategico }}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Temas do Mês -->
+    {% if planejamento.temas %}
+    <section class="section">
+        <h2 class="section-title">TEMAS DO MÊS</h2>
+        <div class="temas-grid">
+            {% for tema in planejamento.temas %}
+            <div class="tema-card">
+                <div class="tema-pilar">{{ tema.pilar }}</div>
+                <div class="tema-nome">{{ tema.tema }}</div>
+                {% if tema.justificativa %}
+                <div class="tema-justificativa">{{ tema.justificativa }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Conteúdos -->
+    {% set videos = conteudos | selectattr("tipo", "equalto", "video_roteiro") | list %}
+    {% set artes = conteudos | selectattr("tipo", "equalto", "arte_estatica") | list %}
+    {% set carrosseis = conteudos | selectattr("tipo", "equalto", "carrossel") | list %}
+
+    <!-- Roteiros de Vídeo -->
+    {% if videos %}
+    <section class="section">
+        <h2 class="section-title">ROTEIROS DE VÍDEO</h2>
+        {% for video in videos %}
+        <div class="conteudo-card">
+            <div class="conteudo-header">
+                <span class="conteudo-numero">VÍDEO {{ loop.index }}</span>
+                <span class="conteudo-titulo">{{ video.titulo }}</span>
+                {% if video.framework %}
+                <span class="framework-badge">{{ video.framework }}</span>
+                {% endif %}
+            </div>
+            {% if video.pilar %}
+            <div class="pilar-tag">{{ video.pilar }}</div>
+            {% endif %}
+
+            {% if video.conteudo %}
+            <div class="roteiro">
+                {% if video.conteudo.gancho %}
+                <div class="roteiro-section">
+                    <span class="roteiro-label">GANCHO (0-3s):</span>
+                    <p>{{ video.conteudo.gancho }}</p>
+                </div>
+                {% endif %}
+                {% if video.conteudo.desenvolvimento %}
+                <div class="roteiro-section">
+                    <span class="roteiro-label">DESENVOLVIMENTO:</span>
+                    <p>{{ video.conteudo.desenvolvimento }}</p>
+                </div>
+                {% endif %}
+                {% if video.conteudo.cta %}
+                <div class="roteiro-section cta-section">
+                    <span class="roteiro-label">CTA:</span>
+                    <p>{{ video.conteudo.cta }}</p>
+                </div>
+                {% endif %}
+                {% if video.conteudo.duracao %}
+                <div class="duracao">Duração estimada: {{ video.conteudo.duracao }}</div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if video.variacoes_ab %}
+            <div class="variacoes">
+                <span class="variacoes-label">Variações A/B:</span>
+                {% for var in video.variacoes_ab %}
+                <div class="variacao-item">{{ var.copy_alternativa }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if video.referencia_visual %}
+            <div class="referencia">Ref. visual: {{ video.referencia_visual }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+    <!-- Artes Estáticas -->
+    {% if artes %}
+    <section class="section">
+        <h2 class="section-title">ARTES ESTÁTICAS</h2>
+        {% for arte in artes %}
+        <div class="conteudo-card">
+            <div class="conteudo-header">
+                <span class="conteudo-numero">ARTE {{ loop.index }}</span>
+                <span class="conteudo-titulo">{{ arte.titulo }}</span>
+                {% if arte.framework %}
+                <span class="framework-badge">{{ arte.framework }}</span>
+                {% endif %}
+            </div>
+            {% if arte.pilar %}
+            <div class="pilar-tag">{{ arte.pilar }}</div>
+            {% endif %}
+
+            {% if arte.conteudo %}
+            <div class="arte-content">
+                {% if arte.conteudo.titulo %}
+                <div class="arte-headline">{{ arte.conteudo.titulo }}</div>
+                {% endif %}
+                {% if arte.conteudo.copy %}
+                <div class="arte-copy">{{ arte.conteudo.copy }}</div>
+                {% endif %}
+                {% if arte.conteudo.cta_botao %}
+                <div class="arte-cta">CTA botão: {{ arte.conteudo.cta_botao }}</div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if arte.variacoes_ab %}
+            <div class="variacoes">
+                <span class="variacoes-label">Variações A/B:</span>
+                {% for var in arte.variacoes_ab %}
+                <div class="variacao-item">{{ var.copy_alternativa }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+    <!-- Carrosséis -->
+    {% if carrosseis %}
+    <section class="section">
+        <h2 class="section-title">CARROSSÉIS</h2>
+        {% for carrossel in carrosseis %}
+        <div class="conteudo-card">
+            <div class="conteudo-header">
+                <span class="conteudo-numero">CARROSSEL {{ loop.index }}</span>
+                <span class="conteudo-titulo">{{ carrossel.titulo }}</span>
+                {% if carrossel.framework %}
+                <span class="framework-badge">{{ carrossel.framework }}</span>
+                {% endif %}
+            </div>
+            {% if carrossel.pilar %}
+            <div class="pilar-tag">{{ carrossel.pilar }}</div>
+            {% endif %}
+
+            {% if carrossel.conteudo and carrossel.conteudo.slides %}
+            <div class="slides-grid">
+                {% for slide in carrossel.conteudo.slides %}
+                <div class="slide-card">
+                    <div class="slide-number">Slide {{ loop.index }}{% if loop.first %} (Capa){% endif %}{% if loop.last %} (CTA){% endif %}</div>
+                    {% if slide.titulo %}
+                    <div class="slide-titulo">{{ slide.titulo }}</div>
+                    {% endif %}
+                    <div class="slide-texto">{{ slide.texto }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+    <!-- Calendário de Publicação -->
+    {% if planejamento.calendario %}
+    <section class="section">
+        <h2 class="section-title">CALENDÁRIO DE PUBLICAÇÃO</h2>
+        <table class="calendario-table">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Tipo</th>
+                    <th>Título</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in planejamento.calendario %}
+                <tr>
+                    <td>{{ item.data }}</td>
+                    <td>{{ item.tipo_conteudo }}</td>
+                    <td>{{ item.titulo }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    {% endif %}
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>PMAX Agência Digital | Planejamento gerado com IA</p>
+    </footer>
+</body>
+</html>

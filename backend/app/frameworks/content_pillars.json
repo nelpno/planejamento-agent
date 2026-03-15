@@ -1,0 +1,35 @@
+{
+  "descricao": "Framework de pilares de conteúdo para garantir variedade e consistência",
+  "pilares_padrao": [
+    {
+      "nome": "Educação",
+      "percentual": 40,
+      "descricao": "Conteúdo educativo que ensina algo valioso sobre o nicho",
+      "exemplos": ["dicas", "tutoriais", "explicações", "mitos vs verdades", "passo a passo"]
+    },
+    {
+      "nome": "Prova Social",
+      "percentual": 30,
+      "descricao": "Resultados, depoimentos, casos de sucesso que geram confiança",
+      "exemplos": ["antes e depois", "depoimentos", "números/resultados", "cases de sucesso"]
+    },
+    {
+      "nome": "Conversão",
+      "percentual": 20,
+      "descricao": "Conteúdo direto de conversão com CTA forte",
+      "exemplos": ["ofertas", "urgência", "comparação", "razões para agir agora"]
+    },
+    {
+      "nome": "Humanização",
+      "percentual": 10,
+      "descricao": "Bastidores, equipe, valores — cria conexão emocional",
+      "exemplos": ["bastidores", "dia a dia da equipe", "valores da marca", "história do fundador"]
+    }
+  ],
+  "regras": [
+    "Cada cliente pode customizar seus pilares e percentuais",
+    "A soma dos percentuais deve ser 100%",
+    "Mínimo 3 pilares, máximo 5",
+    "A distribuição deve ser respeitada no planejamento mensal"
+  ]
+}

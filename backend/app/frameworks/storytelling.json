@@ -1,0 +1,38 @@
+{
+  "frameworks": [
+    {
+      "id": "AIDA",
+      "nome": "AIDA",
+      "descricao": "Attention → Interest → Desire → Action",
+      "melhor_para": ["vídeos longos", "carrosséis educativos", "conteúdo de consideração"],
+      "estrutura": {
+        "attention": "Capturar atenção imediata com fato surpreendente, pergunta ou visual impactante",
+        "interest": "Manter interesse com informação relevante e benefícios",
+        "desire": "Criar desejo mostrando resultados, prova social ou transformação",
+        "action": "CTA claro e direto"
+      }
+    },
+    {
+      "id": "PAS",
+      "nome": "PAS",
+      "descricao": "Problem → Agitation → Solution",
+      "melhor_para": ["vídeos curtos", "artes de conversão", "conteúdo de dor"],
+      "estrutura": {
+        "problem": "Identificar o problema que o público enfrenta",
+        "agitation": "Agitar a dor — mostrar consequências de não resolver",
+        "solution": "Apresentar a solução (o serviço/produto do cliente)"
+      }
+    },
+    {
+      "id": "HSO",
+      "nome": "Hook-Story-Offer",
+      "descricao": "Gancho → História → Oferta",
+      "melhor_para": ["reels", "stories", "conteúdo viral", "vídeos de engajamento"],
+      "estrutura": {
+        "hook": "Gancho impossível de ignorar nos primeiros 3 segundos",
+        "story": "História que conecta emocionalmente com o público",
+        "offer": "Oferta ou CTA irresistível"
+      }
+    }
+  ]
+}
