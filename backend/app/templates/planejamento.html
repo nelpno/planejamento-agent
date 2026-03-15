@@ -53,111 +53,111 @@
     </section>
     {% endif %}
 
-    <!-- Conteúdos -->
-    {% set videos = conteudos | selectattr("tipo", "equalto", "video_roteiro") | list %}
-    {% set artes = conteudos | selectattr("tipo", "equalto", "arte_estatica") | list %}
-    {% set carrosseis = conteudos | selectattr("tipo", "equalto", "carrossel") | list %}
+    <!-- Conteúdos — iteração direta sem selectattr (compatível com autoescape) -->
 
     <!-- Roteiros de Vídeo -->
-    {% if videos %}
+    {% set video_count = [0] %}
+    {% for item in conteudos %}{% if item.tipo == "video_roteiro" %}{% if video_count.append(video_count.pop() + 1) %}{% endif %}{% endif %}{% endfor %}
+    {% if video_count[0] > 0 %}
     <section class="section">
         <h2 class="section-title">ROTEIROS DE VÍDEO</h2>
-        {% for video in videos %}
+        {% set num = [0] %}
+        {% for item in conteudos %}
+        {% if item.tipo == "video_roteiro" %}
+        {% if num.append(num.pop() + 1) %}{% endif %}
         <div class="conteudo-card">
             <div class="conteudo-header">
-                <span class="conteudo-numero">VÍDEO {{ loop.index }}</span>
-                <span class="conteudo-titulo">{{ video.titulo }}</span>
-                {% if video.framework %}
-                <span class="framework-badge">{{ video.framework }}</span>
-                {% endif %}
+                <span class="conteudo-numero">VÍDEO {{ num[0] }}</span>
+                <span class="conteudo-titulo">{{ item.titulo }}</span>
+                {% if item.framework %}<span class="framework-badge">{{ item.framework }}</span>{% endif %}
             </div>
-            {% if video.pilar %}
-            <div class="pilar-tag">{{ video.pilar }}</div>
-            {% endif %}
+            {% if item.pilar %}<div class="pilar-tag">{{ item.pilar }}</div>{% endif %}
 
-            {% if video.conteudo %}
+            {% if item.conteudo %}
             <div class="roteiro">
-                {% if video.conteudo.gancho %}
+                {% if item.conteudo.gancho %}
                 <div class="roteiro-section">
                     <span class="roteiro-label">GANCHO (0-3s):</span>
-                    <p>{{ video.conteudo.gancho }}</p>
+                    <p>{{ item.conteudo.gancho }}</p>
                 </div>
                 {% endif %}
-                {% if video.conteudo.desenvolvimento %}
+                {% if item.conteudo.desenvolvimento %}
                 <div class="roteiro-section">
                     <span class="roteiro-label">DESENVOLVIMENTO:</span>
-                    <p>{{ video.conteudo.desenvolvimento }}</p>
+                    <p>{{ item.conteudo.desenvolvimento }}</p>
                 </div>
                 {% endif %}
-                {% if video.conteudo.cta %}
+                {% if item.conteudo.cta %}
                 <div class="roteiro-section cta-section">
                     <span class="roteiro-label">CTA:</span>
-                    <p>{{ video.conteudo.cta }}</p>
+                    <p>{{ item.conteudo.cta }}</p>
                 </div>
                 {% endif %}
-                {% if video.conteudo.duracao %}
-                <div class="duracao">Duração estimada: {{ video.conteudo.duracao }}</div>
+                {% if item.conteudo.duracao_estimada or item.conteudo.duracao %}
+                <div class="duracao">Duração: {{ item.conteudo.duracao_estimada or item.conteudo.duracao }}</div>
                 {% endif %}
             </div>
             {% endif %}
 
-            {% if video.variacoes_ab %}
+            {% if item.variacoes_ab %}
             <div class="variacoes">
                 <span class="variacoes-label">Variações A/B:</span>
-                {% for var in video.variacoes_ab %}
-                <div class="variacao-item">{{ var.copy_alternativa }}</div>
+                {% for var in item.variacoes_ab %}
+                <div class="variacao-item">{{ var.copy_alternativa or var }}</div>
                 {% endfor %}
             </div>
             {% endif %}
-
-            {% if video.referencia_visual %}
-            <div class="referencia">Ref. visual: {{ video.referencia_visual }}</div>
-            {% endif %}
         </div>
+        {% endif %}
         {% endfor %}
     </section>
     {% endif %}
 
     <!-- Artes Estáticas -->
-    {% if artes %}
+    {% set arte_count = [0] %}
+    {% for item in conteudos %}{% if item.tipo == "arte_estatica" %}{% if arte_count.append(arte_count.pop() + 1) %}{% endif %}{% endif %}{% endfor %}
+    {% if arte_count[0] > 0 %}
     <section class="section">
         <h2 class="section-title">ARTES ESTÁTICAS</h2>
-        {% for arte in artes %}
+        {% set num = [0] %}
+        {% for item in conteudos %}
+        {% if item.tipo == "arte_estatica" %}
+        {% if num.append(num.pop() + 1) %}{% endif %}
         <div class="conteudo-card">
             <div class="conteudo-header">
-                <span class="conteudo-numero">ARTE {{ loop.index }}</span>
-                <span class="conteudo-titulo">{{ arte.titulo }}</span>
-                {% if arte.framework %}
-                <span class="framework-badge">{{ arte.framework }}</span>
-                {% endif %}
+                <span class="conteudo-numero">ARTE {{ num[0] }}</span>
+                <span class="conteudo-titulo">{{ item.titulo }}</span>
+                {% if item.framework %}<span class="framework-badge">{{ item.framework }}</span>{% endif %}
             </div>
-            {% if arte.pilar %}
-            <div class="pilar-tag">{{ arte.pilar }}</div>
-            {% endif %}
+            {% if item.pilar %}<div class="pilar-tag">{{ item.pilar }}</div>{% endif %}
 
-            {% if arte.conteudo %}
+            {% if item.conteudo %}
             <div class="arte-content">
-                {% if arte.conteudo.titulo %}
-                <div class="arte-headline">{{ arte.conteudo.titulo }}</div>
+                {% if item.conteudo.titulo_arte or item.conteudo.titulo %}
+                <div class="arte-headline">{{ item.conteudo.titulo_arte or item.conteudo.titulo }}</div>
                 {% endif %}
-                {% if arte.conteudo.copy %}
-                <div class="arte-copy">{{ arte.conteudo.copy }}</div>
+                {% if item.conteudo.copy %}
+                <div class="arte-copy">{{ item.conteudo.copy }}</div>
                 {% endif %}
-                {% if arte.conteudo.cta_botao %}
-                <div class="arte-cta">CTA botão: {{ arte.conteudo.cta_botao }}</div>
+                {% if item.conteudo.cta_botao or item.conteudo.cta %}
+                <div class="arte-cta">CTA botão: {{ item.conteudo.cta_botao or item.conteudo.cta }}</div>
+                {% endif %}
+                {% if item.conteudo.hashtags %}
+                <div class="duracao">{{ item.conteudo.hashtags | join(' ') }}</div>
                 {% endif %}
             </div>
             {% endif %}
 
-            {% if arte.variacoes_ab %}
+            {% if item.variacoes_ab %}
             <div class="variacoes">
                 <span class="variacoes-label">Variações A/B:</span>
-                {% for var in arte.variacoes_ab %}
-                <div class="variacao-item">{{ var.copy_alternativa }}</div>
+                {% for var in item.variacoes_ab %}
+                <div class="variacao-item">{{ var.copy_alternativa or var }}</div>
                 {% endfor %}
             </div>
             {% endif %}
         </div>
+        {% endif %}
         {% endfor %}
     </section>
     {% endif %}

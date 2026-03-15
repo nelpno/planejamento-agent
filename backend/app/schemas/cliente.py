@@ -25,6 +25,12 @@ class KickOffInput(BaseModel):
     kickoff_text: str = Field(..., min_length=10, max_length=20_000)
 
 
+class DiscoverInput(BaseModel):
+    instagram: str | None = None
+    site: str | None = None
+    notas: str | None = None  # Informações extras que o operador sabe
+
+
 class ClienteUpdate(BaseModel):
     nome_empresa: str | None = None
     nicho: str | None = None

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import get_session
 from app.providers.openrouter_client import OpenRouterClient
-from app.schemas.cliente import ClienteCreate, ClienteUpdate, ClienteResponse, KickOffInput
+from app.schemas.cliente import ClienteCreate, ClienteUpdate, ClienteResponse, KickOffInput, DiscoverInput
 from app.services import cliente_service
 from app.utils.json_parser import parse_json_safe as _parse_json_safe
 
@@ -95,6 +95,92 @@ async def preview_kickoff(data: KickOffInput):
         "redes_sociais": perfil.get("redes_sociais"),
         "instrucoes": perfil.get("instrucoes"),
     }
+
+
+DISCOVER_SYSTEM_PROMPT = """Você é um pesquisador de marketing digital. Pesquise na internet sobre a empresa abaixo e extraia um perfil completo para planejamento de conteúdo.
+
+PESQUISE os seguintes dados na web:
+- Site da empresa: analise todas as páginas, serviços, sobre, depoimentos
+- Instagram: analise o tipo de conteúdo publicado, frequência, engajamento, tom de voz
+- Concorrentes: identifique 3-5 concorrentes do mesmo nicho
+
+Retorne APENAS JSON válido com esta estrutura:
+{
+  "nome_empresa": "Nome da empresa extraído",
+  "nicho": "Nicho/segmento de mercado",
+  "publico_alvo": {
+    "descricao": "Descrição detalhada do público-alvo",
+    "faixa_etaria": "25-55",
+    "localizacao": "Região",
+    "dores": ["dor 1", "dor 2"]
+  },
+  "tom_de_voz": {
+    "estilo": "Tom identificado no Instagram/site",
+    "palavras_chave": ["palavra1", "palavra2"],
+    "evitar": ["termo1"]
+  },
+  "pilares": [
+    {"nome": "Pilar", "percentual": 40, "descricao": "Baseado no conteúdo atual"}
+  ],
+  "tipos_conteudo": [
+    {"tipo": "video_roteiro", "quantidade": 4, "formato": "Reels/Feed"}
+  ],
+  "concorrentes": [
+    {"nome": "Nome", "instagram": "@handle", "site": "url"}
+  ],
+  "redes_sociais": {"instagram": "@handle", "site": "url"},
+  "instrucoes": "Insights encontrados na pesquisa: PUV, diferenciais, estratégia atual"
+}
+
+Pilares devem somar 100%. Baseie tudo em dados REAIS encontrados na pesquisa."""
+
+
+@router.post("/kick-off/discover")
+async def discover_kickoff(data: DiscoverInput):
+    """Pesquisa automática: IA busca na web e gera perfil do cliente."""
+    if not data.instagram and not data.site:
+        raise HTTPException(status_code=400, detail="Informe pelo menos Instagram ou Site")
+
+    client = OpenRouterClient()
+    try:
+        user_prompt = "Pesquise sobre esta empresa:\n"
+        if data.instagram:
+            user_prompt += f"Instagram: {data.instagram}\n"
+        if data.site:
+            user_prompt += f"Site: {data.site}\n"
+        if data.notas:
+            user_prompt += f"\nInformações adicionais: {data.notas}\n"
+
+        response = await client.chat(
+            model=settings.LLM_MODEL_SEARCH,
+            messages=[
+                {"role": "system", "content": DISCOVER_SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.3,
+            max_tokens=4096,
+        )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error("Discover failed: %s", e)
+        raise HTTPException(status_code=502, detail="Serviço de pesquisa temporariamente indisponível")
+    finally:
+        await client.close()
+
+    try:
+        perfil = _parse_json_safe(response)
+    except ValueError:
+        raise HTTPException(status_code=502, detail="Não foi possível extrair dados da pesquisa. Tente novamente.")
+
+    # Ensure redes_sociais has the input values
+    redes = perfil.get("redes_sociais", {})
+    if data.instagram and not redes.get("instagram"):
+        redes["instagram"] = data.instagram
+    if data.site and not redes.get("site"):
+        redes["site"] = data.site
+    perfil["redes_sociais"] = redes
+
+    return perfil
 
 
 @router.post("", response_model=ClienteResponse, status_code=201)

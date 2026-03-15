@@ -139,9 +139,12 @@ export default function KickOff() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Cliente | null>(null);
   const [error, setError] = useState('');
-  const [mode, setMode] = useState<'manual' | 'paste' | null>(null);
+  const [mode, setMode] = useState<'manual' | 'paste' | 'discover' | null>(null);
   const [pasteText, setPasteText] = useState('');
   const [preview, setPreview] = useState<any>(null);
+  const [discoverInstagram, setDiscoverInstagram] = useState('');
+  const [discoverSite, setDiscoverSite] = useState('');
+  const [discoverNotas, setDiscoverNotas] = useState('');
 
   function updateField(field: keyof KickOffForm, value: string | string[]) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -197,6 +200,23 @@ export default function KickOff() {
     }
   }
 
+  async function handleDiscover() {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await api.post('/clientes/kick-off/discover', {
+        instagram: discoverInstagram.trim() ? `@${discoverInstagram.replace('@', '')}` : null,
+        site: discoverSite.trim() ? (discoverSite.startsWith('http') ? discoverSite : `https://${discoverSite}`) : null,
+        notas: discoverNotas.trim() || null,
+      });
+      setPreview(res.data);
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || 'Erro na pesquisa. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleSavePreview() {
     if (!preview) return;
     setLoading(true);
@@ -216,11 +236,9 @@ export default function KickOff() {
     setResult(null);
     setPreview(null);
     setError('');
-    if (mode === 'paste') {
-      handlePasteGenerate();
-    } else {
-      handleGenerate();
-    }
+    if (mode === 'paste') handlePasteGenerate();
+    else if (mode === 'discover') handleDiscover();
+    else handleGenerate();
   }
 
   // Input render helpers (plain functions, NOT React components — avoids remount on every keystroke)
@@ -571,9 +589,13 @@ export default function KickOff() {
           <div className="w-20 h-20 border-4 border-accent/20 rounded-full" />
           <div className="absolute inset-0 w-20 h-20 border-4 border-accent border-t-transparent rounded-full animate-spin" />
         </div>
-        <h2 className="text-xl font-bold text-primary mb-2">Analisando respostas com IA...</h2>
+        <h2 className="text-xl font-bold text-primary mb-2">
+          {mode === 'discover' ? 'Pesquisando na web...' : 'Analisando respostas com IA...'}
+        </h2>
         <p className="text-gray-500 text-center max-w-md">
-          Analisando com IA — pode levar 30-60 segundos...
+          {mode === 'discover'
+            ? 'Pesquisando na web — pode levar 30-60 segundos...'
+            : 'Analisando com IA — pode levar 30-60 segundos...'}
         </p>
       </div>
     );
@@ -590,7 +612,7 @@ export default function KickOff() {
 
       {/* Mode selector - show only if no mode selected yet and no result */}
       {!mode && !result && !loading && (
-        <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
           <button
             onClick={() => setMode('paste')}
             className="p-6 border-2 border-gray-200 rounded-xl hover:border-accent hover:shadow-lg transition-all text-left group"
@@ -610,6 +632,24 @@ export default function KickOff() {
           </button>
 
           <button
+            onClick={() => setMode('discover')}
+            className="p-6 border-2 border-gray-200 rounded-xl hover:border-green-500 hover:shadow-lg transition-all text-left group"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center group-hover:bg-green-200">
+                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-bold text-primary">Pesquisa Automatica</h3>
+                <span className="text-xs text-green-600 font-medium">Novo</span>
+              </div>
+            </div>
+            <p className="text-sm text-gray-500">Informe Instagram e/ou Site. A IA pesquisa na web e monta o perfil completo.</p>
+          </button>
+
+          <button
             onClick={() => setMode('manual')}
             className="p-6 border-2 border-gray-200 rounded-xl hover:border-secondary hover:shadow-lg transition-all text-left group"
           >
@@ -621,8 +661,61 @@ export default function KickOff() {
               </div>
               <h3 className="font-bold text-primary">Preencher Manualmente</h3>
             </div>
-            <p className="text-sm text-gray-500">Preencha cada campo em 5 etapas guiadas. Ideal para novos clientes sem formulário prévio.</p>
+            <p className="text-sm text-gray-500">Preencha cada campo em 5 etapas guiadas. Ideal para novos clientes sem formulario previo.</p>
           </button>
+        </div>
+      )}
+
+      {/* DISCOVER MODE */}
+      {mode === 'discover' && !result && !preview && !loading && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-primary">Pesquisa Automatica</h2>
+              <p className="text-sm text-gray-500">A IA vai pesquisar o site e Instagram para montar o perfil</p>
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Instagram</label>
+              <div className="flex">
+                <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">@</span>
+                <input type="text" value={discoverInstagram} onChange={(e) => setDiscoverInstagram(e.target.value)} placeholder="renataflora_" className="w-full px-4 py-2.5 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-green-500/30 focus:border-green-500 outline-none text-sm" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Site</label>
+              <div className="flex">
+                <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">https://</span>
+                <input type="text" value={discoverSite} onChange={(e) => setDiscoverSite(e.target.value)} placeholder="renatafloraadvocacia.com.br" className="w-full px-4 py-2.5 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-green-500/30 focus:border-green-500 outline-none text-sm" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Informacoes extras (opcional)</label>
+              <textarea value={discoverNotas} onChange={(e) => setDiscoverNotas(e.target.value)} placeholder="Ex: Advocacia trabalhista, foco em gestantes, atende todo Brasil..." rows={3} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500/30 focus:border-green-500 outline-none text-sm resize-none" />
+              <p className="text-xs text-gray-400 mt-1">Qualquer informacao que ajude a IA a encontrar dados mais precisos</p>
+            </div>
+          </div>
+
+          {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
+
+          <div className="flex justify-between">
+            <button onClick={() => { setMode(null); }} className="px-6 py-2.5 text-gray-600 hover:text-gray-800 text-sm font-medium">Voltar</button>
+            <button
+              onClick={handleDiscover}
+              disabled={!discoverInstagram.trim() && !discoverSite.trim()}
+              className="px-8 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shadow-md"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              Pesquisar e Gerar Perfil
+            </button>
+          </div>
         </div>
       )}
 
