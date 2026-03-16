@@ -15,15 +15,21 @@ Pipeline de 2 agents IA (Pesquisador → Gerador) cria roteiros, copies e carros
 - **Frontend**: React 19 + Vite 6 + Tailwind CSS 3.4 + TypeScript
 - **Banco**: PostgreSQL 16 (nelsonNet, user: planner, db: planejamento_agent)
 - **Fila**: Redis 7 (db 1) + Celery 5.4
-- **IA**: OpenRouter (Sonnet para geração, Perplexity Sonar para pesquisa web)
+- **IA**: OpenRouter (Sonnet 4.6 para geração, Haiku 4.5 para ajustes, Perplexity Sonar para pesquisa web)
 - **PDF**: Gotenberg 8 (Jinja2 + autoescape)
 - **DOCX**: python-docx
 - **Deploy**: Docker Swarm via Portainer + Traefik + Cloudflare
 
+## Modelos LLM
+- **Gerador**: `anthropic/claude-sonnet-4-6` (temp 0.7, 12288 tokens) — gera tudo em 1 chamada
+- **Pesquisador**: `perplexity/sonar-pro` (temp 0.6) — web search real
+- **Ajustador**: `anthropic/claude-haiku-4-5` (temp 0.3) — econômico para ajustes
+- **Kick Off**: `anthropic/claude-sonnet-4-6` (temp 0.3) — extrai perfil do texto
+
 ## Pipeline (2 agents)
-1. **Pesquisador** (Perplexity Sonar, temp 0.6) — web search real: tendências, concorrentes, viral
-2. **Gerador** (Claude Sonnet, temp 0.7, 12288 tokens) — gera TUDO em 1 chamada: estratégia + conteúdos + calendário
-- **Ajustador** (Sonnet, temp 0.3) — para feedback, revisa sem refazer do zero
+1. **Pesquisador** (Perplexity Sonar) — web search: tendências, concorrentes, viral
+2. **Gerador** (Sonnet 4.6) — gera TUDO em 1 chamada: estratégia + conteúdos + calendário
+- **Ajustador** (Haiku 4.5) — para feedback, revisa sem refazer do zero
 
 ## Kick Off (3 modos)
 - **Colar Respostas** — cola texto do Google Forms
@@ -35,6 +41,16 @@ Pipeline de 2 agents IA (Pesquisador → Gerador) cria roteiros, copies e carros
 2. Direcionamento (produtos a promover, referências, feedback reunião)
 3. Configuração (foco/destino/tipo/plataformas — pré-preenchido do perfil)
 4. Tipos de conteúdo (quantidades)
+
+## Features Operacionais
+- **Dashboard**: clientes pendentes este mês + stats + planejamentos recentes
+- **Deletar** planejamento (com confirmação)
+- **Duplicar** planejamento para próximo mês
+- **Marcar como Enviado** (timestamp + badge no histórico)
+- **Editar** cliente (tela dedicada)
+- **Collapse** por tipo de conteúdo na preview
+- **Download**: PDF + DOCX editável
+- **Refazer** (pipeline completo) / **Ajustar** (só modifica o que pediu)
 
 ## Separação Importante
 - **Kick Off** = perfil do cliente (CONTEXTO — quem é)
@@ -60,18 +76,21 @@ psql -U planner -d planejamento_agent -c "ALTER TABLE x ADD COLUMN IF NOT EXISTS
 - `selectattr` incompatível com autoescape → usar loop com `if "tipo" in item.tipo`
 - Celery + engine global = "Future attached to different loop" → criar engine dentro da task
 - `variacoes_ab` é `list | None` no schema (não `dict`)
-- LLM inventa tipos (`foto_produtos`) → prompt enforça "SOMENTE video_roteiro, arte_estatica, carrossel"
+- LLM inventa tipos → prompt enforça "SOMENTE video_roteiro, arte_estatica, carrossel"
+- Frontend normaliza tipos com `includes()` (aceita variantes do LLM)
 - Componentes React dentro de funções = remount → usar render helpers
-- Deploy durante geração = task perdida, status "em_geracao" para sempre
-- Perplexity Sonar: não suporta response_format, timeout na 1ª chamada
-- `VITE_API_URL` é build-time → path relativo via nginx em produção
-- Vite: allowedHosts necessário para domínio de produção
+- Deploy durante geração = task perdida
+- Perplexity Sonar: não suporta response_format
+- `VITE_API_URL` é build-time → path relativo via nginx
+- Vite: allowedHosts para domínio de produção
 - Redis db 1 (db 0 é Designer Agent)
 - `/storage/` protegido por API key
-- Sem menção a IA nos documentos — footer: "PMAX Marketing de Performance"
+- Footer documentos: "PMAX Marketing de Performance" (sem menção a IA)
+- Logo clara no header PDF (fundo escuro), logo escura no DOCX (fundo branco)
 
 ## Convenções
 - Idioma: PT-BR em código e prompts
 - `parse_json_safe()` em `app/utils/json_parser.py` para TODA resposta LLM
 - Erros genéricos no response (não vazar detalhes internos)
 - Novas colunas: ALTER TABLE via Portainer exec
+- handleDelete/handleX sempre com `finally { setActionLoading(false) }`
