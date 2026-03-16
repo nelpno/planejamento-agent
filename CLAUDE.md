@@ -1,8 +1,8 @@
 # Planejamento Agent - PMAX
 
 ## Sobre
-App web para geração semi-autônoma de planejamentos mensais de marketing de conteúdo.
-Pipeline de 5 agents IA gera roteiros de vídeo, copies de artes e carrosséis personalizados por cliente.
+App web para geração de planejamentos mensais de marketing de conteúdo.
+Pipeline de 2 agents IA (Pesquisador → Gerador) cria roteiros, copies e carrosséis em ~40s.
 
 ## URLs
 - **Produção**: https://planejamento.dynamicagents.tech
@@ -13,113 +13,65 @@ Pipeline de 5 agents IA gera roteiros de vídeo, copies de artes e carrosséis p
 ## Stack
 - **Backend**: FastAPI 0.115 + Python 3.12 + SQLAlchemy 2.0 + asyncpg
 - **Frontend**: React 19 + Vite 6 + Tailwind CSS 3.4 + TypeScript
-- **Banco**: PostgreSQL 16 (rede nelsonNet, user: planner, db: planejamento_agent)
+- **Banco**: PostgreSQL 16 (nelsonNet, user: planner, db: planejamento_agent)
 - **Fila**: Redis 7 (db 1) + Celery 5.4
-- **IA**: OpenRouter API (Sonnet para criação, Haiku para fast, Perplexity Sonar para pesquisa web)
-- **PDF**: Gotenberg 8 (HTML → PDF via Jinja2 template com autoescape)
-- **DOCX**: python-docx (Word editável)
+- **IA**: OpenRouter (Sonnet para geração, Perplexity Sonar para pesquisa web)
+- **PDF**: Gotenberg 8 (Jinja2 + autoescape)
+- **DOCX**: python-docx
 - **Deploy**: Docker Swarm via Portainer + Traefik + Cloudflare
 
-## Estrutura
-```
-backend/app/
-├── main.py                    # FastAPI app + middlewares + auth
-├── database.py                # AsyncSession + engine (NÃO usar no Celery — ver Gotchas)
-├── config/                    # Settings (pydantic-settings, sem defaults para DB/Redis)
-├── models/                    # SQLAlchemy ORM (clientes, planejamentos, conteudos, historico, pipeline_logs)
-├── schemas/                   # Pydantic I/O (variacoes_ab é LIST, não dict)
-├── routers/
-│   ├── clientes.py            # CRUD + kick-off/preview + discover (web search)
-│   ├── planejamentos.py       # Gerar/listar/aprovar/ajustar/regerar/download PDF+DOCX
-│   ├── config.py              # Tipos conteúdo, frameworks, focos, destinos, plataformas
-│   └── websocket.py           # Pipeline real-time (10min timeout, reconexão)
-├── agents/
-│   ├── base_agent.py          # Classe base + parse_json_safe (3 fallbacks)
-│   ├── orchestrator.py        # Pipeline controller (recebe session_factory do caller)
-│   ├── pesquisador.py         # Perplexity Sonar (web search real) | temp 0.8
-│   ├── estrategista.py        # Claude Sonnet | temp 0.6 | usa foco/destino/plataformas
-│   ├── planejador.py          # Claude Sonnet | temp 0.7 | 12288 tokens | 3 few-shot
-│   ├── revisor.py             # Claude Sonnet | temp 0.1 | score 0-100 | verifica A/B
-│   └── ajustador.py           # Claude Sonnet | temp 0.3 | revisa sem refazer do zero
-├── services/
-│   ├── pdf_service.py         # Gotenberg + Jinja2 (autoescape ativado)
-│   ├── docx_service.py        # python-docx (Word editável com logo)
-│   ├── cliente_service.py     # CRUD helpers
-│   └── storage_service.py     # Path validation (realpath guard)
-├── providers/
-│   └── openrouter_client.py   # HTTP/2, 120s timeout, retry 3x com backoff
-├── utils/
-│   └── json_parser.py         # parse_json_safe compartilhado (agents + routers)
-├── prompts/                   # System prompts detalhados (PT-BR)
-├── templates/                 # HTML/CSS para PDF + logos (claro/escuro)
-├── tasks/
-│   ├── celery_app.py          # Config (10min timeout, Redis db 1)
-│   └── generation_tasks.py    # Pipeline async + ajuste + PDF + engine próprio
-└── frameworks/                # Storytelling (AIDA/PAS/HSO) + pilares
-```
+## Pipeline (2 agents)
+1. **Pesquisador** (Perplexity Sonar, temp 0.6) — web search real: tendências, concorrentes, viral
+2. **Gerador** (Claude Sonnet, temp 0.7, 12288 tokens) — gera TUDO em 1 chamada: estratégia + conteúdos + calendário
+- **Ajustador** (Sonnet, temp 0.3) — para feedback, revisa sem refazer do zero
 
-## Pipeline de Agents
-1. **Pesquisador** (Perplexity Sonar) — web search real: tendências, concorrentes, viral, sazonalidade
-2. **Estrategista** (Sonnet, temp 0.6) — temas por pilar, calendário, anti-repetição, usa foco/destino
-3. **Planejador** (Sonnet, temp 0.7, 12288 tokens) — roteiros, copies, CTAs, frameworks variados, A/B
-4. **Revisor** (Sonnet, temp 0.1) — score 0-100, valida tom/CTAs/pilares, loop se < 70
-5. **Ajustador** (Sonnet, temp 0.3) — revisa conteúdo existente com feedback, sem refazer do zero
+## Kick Off (3 modos)
+- **Colar Respostas** — cola texto do Google Forms
+- **Pesquisa Automática** — Instagram + Site → Perplexity pesquisa na web
+- **Manual** — formulário 5 steps
 
-## Kick Off Inteligente (3 modos)
-- **Colar Respostas** — cola texto do Google Forms, IA extrai perfil
-- **Pesquisa Automática** — só Instagram + Site, Perplexity pesquisa na web
-- **Preencher Manualmente** — formulário 5 steps (31 perguntas do Kick Off)
+## Novo Planejamento (4 steps)
+1. Cliente + Mês
+2. Direcionamento (produtos a promover, referências, feedback reunião)
+3. Configuração (foco/destino/tipo/plataformas — pré-preenchido do perfil)
+4. Tipos de conteúdo (quantidades)
 
-## Direcionamento do Planejamento
-- Perfil do cliente (Kick Off) = **CONTEXTO** — quem é o cliente (tom, público, pilares)
-- Inputs do planejamento = **DIRECIONAMENTO** — o que fazer no mês
-- Campos: produtos a promover, referências mês anterior, feedback reunião
-- Foco: Leads | E-commerce | Orgânico | Branding | Lançamento | Retenção
-- Destino: WhatsApp | Site | DM | Loja | Agendamento | Telefone
-- Tipo: Orgânico | Pago | Ambos
-- Plataformas: Instagram, TikTok, YouTube, LinkedIn, Facebook
-
-## Fluxos
-- **Novo planejamento**: Pesquisador → Estrategista → Planejador → Revisor (~2.5min)
-- **Ajuste (feedback)**: Ajustador → Revisor (~30s, não refaz do zero)
-- **Refazer (failed/travado)**: Pipeline completo via POST /regerar
-- **Outputs**: PDF (logo clara no header escuro) + DOCX editável (logo escura)
-- **Footer**: "PMAX Marketing de Performance" (sem menção a IA)
+## Separação Importante
+- **Kick Off** = perfil do cliente (CONTEXTO — quem é)
+- **Planejamento** = direcionamento do mês (O QUE fazer)
+- Defaults salvos no perfil: foco_padrao, destino_padrao, tipo_uso_padrao, plataformas_padrao
 
 ## Deploy
 ```bash
-# NUNCA fazer deploy sem confirmação do operador
+# NUNCA deploy sem confirmação do operador
 API_KEY="ptr_2bJkq4BVfY+LuE5WWbUryyK11OQQmsDIiAeVn6aLN/k="
 curl -X POST "https://porto.dynamicagents.tech/api/stacks/33/stop?endpointId=1" -H "X-API-Key: $API_KEY"
 curl -X POST "https://porto.dynamicagents.tech/api/stacks/33/start?endpointId=1" -H "X-API-Key: $API_KEY"
 ```
 
-## DB Migrations Manuais
+## DB Migrations
 ```bash
 # Via Portainer exec no container postgres (ID: 7649e5f02ad3)
-psql -U planner -d planejamento_agent -c "ALTER TABLE planejamentos ADD COLUMN IF NOT EXISTS coluna TYPE;"
+psql -U planner -d planejamento_agent -c "ALTER TABLE x ADD COLUMN IF NOT EXISTS y TYPE;"
 ```
 
-## Convenções
-- **Idioma**: Todo código e prompts em Português (PT-BR)
-- **Backend**: async/await, type hints, Pydantic v2, parse_json_safe para TODA resposta LLM
-- **Frontend**: TypeScript strict, Tailwind utility-first, render helpers (não componentes aninhados)
-- **Commits**: Português, imperativo ("Adiciona endpoint X", "Corrige bug Y")
-- **Agents**: Temperature otimizada por papel (criativo 0.7-0.8, analítico 0.1-0.3)
-- **API Keys**: Apenas no Portainer (NUNCA no código ou .env.example)
-- **Erros**: Mensagens genéricas no response (não vazar detalhes internos)
-- **Segurança**: API_SECRET_KEY obrigatória em produção, /storage/ protegido
-
 ## Gotchas Críticos
-- `item.conteudo.copy` no Jinja2 chama `dict.copy()` — usar `.get("copy")` para chave "copy"
-- `selectattr` do Jinja2 incompatível com autoescape — usar loop com `if item.tipo == "x"` direto
-- Celery + `AsyncSessionLocal` global = "Future attached to different loop" — criar engine dentro da task com `_create_session_factory()`
-- Revisor `conteudos_revisados` parcial descarta originais — só substituir se `len(revisados) >= len(originais)`
-- `variacoes_ab` é `list | None` no schema (não `dict`) — erro causa 500 silencioso no /conteudos
-- Componentes React dentro de funções = remount a cada keystroke — usar funções renderizadoras puras
-- Deploy durante geração = task Celery perdida, status "em_geracao" para sempre
-- Perplexity Sonar: não suporta `response_format`, timeout na primeira chamada (retry 3x resolve)
-- `VITE_API_URL` é build-time no Vite — em produção usar path relativo via nginx
-- Vite precisa de `allowedHosts` no `vite.config.ts` para domínio de produção
-- Redis db 1 (db 0 é do Designer Agent) — nunca mudar
-- DATABASE_URL e REDIS_URL sem default no config — falha na inicialização se não configurado
+- `item.conteudo.copy` no Jinja2 → chama `dict.copy()`. Usar `.get("copy")`
+- `selectattr` incompatível com autoescape → usar loop com `if "tipo" in item.tipo`
+- Celery + engine global = "Future attached to different loop" → criar engine dentro da task
+- `variacoes_ab` é `list | None` no schema (não `dict`)
+- LLM inventa tipos (`foto_produtos`) → prompt enforça "SOMENTE video_roteiro, arte_estatica, carrossel"
+- Componentes React dentro de funções = remount → usar render helpers
+- Deploy durante geração = task perdida, status "em_geracao" para sempre
+- Perplexity Sonar: não suporta response_format, timeout na 1ª chamada
+- `VITE_API_URL` é build-time → path relativo via nginx em produção
+- Vite: allowedHosts necessário para domínio de produção
+- Redis db 1 (db 0 é Designer Agent)
+- `/storage/` protegido por API key
+- Sem menção a IA nos documentos — footer: "PMAX Marketing de Performance"
+
+## Convenções
+- Idioma: PT-BR em código e prompts
+- `parse_json_safe()` em `app/utils/json_parser.py` para TODA resposta LLM
+- Erros genéricos no response (não vazar detalhes internos)
+- Novas colunas: ALTER TABLE via Portainer exec
