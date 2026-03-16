@@ -17,6 +17,10 @@ class ClienteCreate(BaseModel):
     redes_sociais: dict | None = None
     instrucoes: str | None = None
     logo_url: str | None = None
+    foco_padrao: str | None = None
+    destino_padrao: str | None = None
+    tipo_uso_padrao: str | None = None
+    plataformas_padrao: list[str] | None = None
 
 
 class KickOffInput(BaseModel):
@@ -42,6 +46,10 @@ class ClienteUpdate(BaseModel):
     redes_sociais: dict | None = None
     instrucoes: str | None = None
     logo_url: str | None = None
+    foco_padrao: str | None = None
+    destino_padrao: str | None = None
+    tipo_uso_padrao: str | None = None
+    plataformas_padrao: list[str] | None = None
 
 
 class ClienteResponse(BaseModel):
@@ -58,5 +66,9 @@ class ClienteResponse(BaseModel):
     redes_sociais: dict | None = None
     instrucoes: str | None = None
     logo_url: str | None = None
+    foco_padrao: str | None = None
+    destino_padrao: str | None = None
+    tipo_uso_padrao: str | None = None
+    plataformas_padrao: list[str] | None = None
     created_at: datetime
     updated_at: datetime | None = None

@@ -116,22 +116,7 @@ async def _run_ajuste_pipeline(task, planejamento_id: str, pipeline_context_dict
             revisor = RevisorAgent(client)
             context = await revisor.run(context)
 
-            # Apply revised contents only if Revisor returned ALL pieces
-            if context.revisao and context.revisao.conteudos_revisados and len(context.revisao.conteudos_revisados) >= len(context.conteudos):
-                from app.agents.context import ConteudoGerado
-                context.conteudos = [
-                    ConteudoGerado(
-                        tipo=c.get("tipo", ""),
-                        pilar=c.get("pilar", ""),
-                        framework=c.get("framework", ""),
-                        titulo=c.get("titulo", ""),
-                        conteudo=c.get("conteudo", {}),
-                        variacoes_ab=c.get("variacoes_ab", []),
-                        referencia_visual=c.get("referencia_visual", ""),
-                        ordem=c.get("ordem", i),
-                    )
-                    for i, c in enumerate(context.revisao.conteudos_revisados)
-                ]
+            # Revisor agora retorna apenas score + notas (sem conteudos_revisados)
         finally:
             await client.close()
 

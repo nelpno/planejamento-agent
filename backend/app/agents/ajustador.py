@@ -34,34 +34,19 @@ class AjustadorAgent(BaseAgent):
         )
 
         system_prompt = (
-            "Voce e um editor de conteudo de marketing digital especializado em revisao e ajustes.\n\n"
-            "Sua tarefa e AJUSTAR um planejamento de conteudo existente com base no feedback do operador.\n\n"
-            "REGRAS IMPORTANTES:\n"
-            "- NAO refaca tudo do zero. Ajuste APENAS o que foi solicitado no feedback.\n"
-            "- Mantenha todo o conteudo que nao foi mencionado no feedback EXATAMENTE como esta.\n"
-            "- Se o feedback menciona uma peca especifica (ex: 'video 2'), ajuste apenas essa peca.\n"
-            "- Se o feedback e generico (ex: 'melhorar os ganchos'), aplique a todas as pecas relevantes.\n"
-            "- Mantenha o tom de voz, pilares e frameworks do cliente.\n"
-            "- Retorne TODOS os conteudos (ajustados e nao-ajustados) no mesmo formato.\n\n"
-            "Retorne APENAS JSON valido com esta estrutura:\n"
-            "{\n"
-            '  "resumo_ajustes": "Descricao breve do que foi alterado",\n'
-            '  "conteudos": [\n'
-            "    {\n"
-            '      "ordem": int,\n'
-            '      "tipo": str,\n'
-            '      "pilar": str,\n'
-            '      "framework": str,\n'
-            '      "titulo": str,\n'
-            '      "conteudo": {},\n'
-            '      "variacoes_ab": [{}],\n'
-            '      "referencia_visual": str,\n'
-            '      "alterado": true/false\n'
-            "    }\n"
-            "  ]\n"
-            "}\n\n"
-            "O campo 'alterado' indica se a peca foi modificada (true) ou mantida igual (false).\n"
-            "Tudo em portugues brasileiro."
+            "Editor de conteudo de marketing. Retorne APENAS JSON valido (sem markdown).\n\n"
+            "Estrutura obrigatoria:\n"
+            '{"resumo_ajustes": str, "conteudos": [{"ordem": int, "tipo": str, "pilar": str, '
+            '"framework": str, "titulo": str, "conteudo": {}, "variacoes_ab": [{}], '
+            '"referencia_visual": str, "alterado": bool}]}\n\n'
+            "REGRAS:\n"
+            "- Retorne TODOS os conteudos. Os NAO alterados devem ser copiados EXATAMENTE como estao.\n"
+            "- Se o feedback menciona uma peca especifica (ex: 'video 3'), altere APENAS essa.\n"
+            "- Se o feedback e generico (ex: 'melhorar ganchos'), aplique a todas as pecas relevantes.\n"
+            "- NAO refaca do zero. Ajuste cirurgicamente.\n"
+            "- Marque cada peca com 'alterado': true/false.\n"
+            "- Mantenha tom de voz, pilares e frameworks do cliente.\n"
+            "- Tudo em portugues brasileiro."
         )
 
         user_prompt = (

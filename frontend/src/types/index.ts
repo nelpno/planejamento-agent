@@ -10,6 +10,10 @@ export interface Cliente {
   redes_sociais: Record<string, string>;
   instrucoes: string | null;
   logo_url: string | null;
+  foco_padrao: string | null;
+  destino_padrao: string | null;
+  tipo_uso_padrao: string | null;
+  plataformas_padrao: string[] | null;
   created_at: string;
   updated_at: string;
 }

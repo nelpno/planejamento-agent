@@ -15,12 +15,8 @@ class PesquisadorAgent(BaseAgent):
         ) or "nenhum informado"
 
         system_prompt = (
-            "Voce e um pesquisador de marketing digital especializado em "
-            "analise de tendencias e benchmarking competitivo.\n\n"
-            "Sua tarefa e realizar uma pesquisa de mercado simulada para "
-            "subsidiar o planejamento de conteudo mensal de um cliente.\n\n"
-            "Voce deve retornar APENAS um JSON valido (sem markdown, sem ```json) "
-            "com a seguinte estrutura:\n"
+            "Pesquisador de marketing digital. Retorne APENAS JSON valido (sem markdown).\n\n"
+            "Estrutura obrigatoria:\n"
             "{\n"
             '  "tendencias": [{"termo": str, "volume": str, "contexto": str}],\n'
             '  "datas_comemorativas": [{"data": str, "nome": str, "relevancia": str}],\n'
@@ -28,13 +24,13 @@ class PesquisadorAgent(BaseAgent):
             '  "conteudo_viral": [{"descricao": str, "porque_viralizou": str}],\n'
             '  "resumo": str\n'
             "}\n\n"
-            "Diretrizes:\n"
-            "- Identifique 5-8 tendencias relevantes para o nicho\n"
-            "- Liste datas comemorativas e sazonais do mes com relevancia para o nicho\n"
-            "- Analise os concorrentes e identifique oportunidades\n"
-            "- Identifique 3-5 tipos de conteudo que estao viralizando no nicho\n"
-            "- O resumo deve ser um paragrafo conciso com os principais insights\n"
-            "- Seja especifico para o nicho do cliente, use dados realistas e atuais\n"
+            "Regras:\n"
+            "- 5 tendencias relevantes para o nicho\n"
+            "- 3 datas comemorativas/sazonais do mes\n"
+            "- 3 insights de concorrencia com oportunidades\n"
+            "- 3 conteudos virais do nicho\n"
+            "- Resumo: 1 paragrafo com principais insights\n"
+            "- Dados especificos e atuais para o nicho\n"
             "- Tudo em portugues brasileiro"
         )
 
@@ -64,7 +60,7 @@ class PesquisadorAgent(BaseAgent):
         kwargs = {
             "model": model,
             "messages": messages,
-            "temperature": 0.8,
+            "temperature": 0.6,
             "max_tokens": 4096,
         }
         if not use_search:

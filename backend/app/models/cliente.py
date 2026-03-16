@@ -26,6 +26,10 @@ class Cliente(Base):
     redes_sociais: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     instrucoes: Mapped[str | None] = mapped_column(Text, nullable=True)
     logo_url: Mapped[str | None] = mapped_column(nullable=True)
+    foco_padrao: Mapped[str | None] = mapped_column(nullable=True)
+    destino_padrao: Mapped[str | None] = mapped_column(nullable=True)
+    tipo_uso_padrao: Mapped[str | None] = mapped_column(nullable=True)
+    plataformas_padrao: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         server_default=func.now(), nullable=False
     )

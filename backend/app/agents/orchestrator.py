@@ -52,22 +52,6 @@ class PipelineOrchestrator:
                 await self._save_progress(context, "revisor")
 
                 if context.revisao and context.revisao.aprovado:
-                    # Apply revised contents only if Revisor returned ALL pieces
-                    if context.revisao.conteudos_revisados and len(context.revisao.conteudos_revisados) >= len(context.conteudos):
-                        from app.agents.context import ConteudoGerado
-                        context.conteudos = [
-                            ConteudoGerado(
-                                tipo=c.get("tipo", ""),
-                                pilar=c.get("pilar", ""),
-                                framework=c.get("framework", ""),
-                                titulo=c.get("titulo", ""),
-                                conteudo=c.get("conteudo", {}),
-                                variacoes_ab=c.get("variacoes_ab", []),
-                                referencia_visual=c.get("referencia_visual", ""),
-                                ordem=c.get("ordem", i),
-                            )
-                            for i, c in enumerate(context.revisao.conteudos_revisados)
-                        ]
                     logger.info(
                         "[%s] Approved with score %d at iteration %d",
                         context.planejamento_id, context.revisao.score, iteration,
@@ -76,12 +60,17 @@ class PipelineOrchestrator:
 
                 if iteration < context.max_iterations:
                     logger.info(
-                        "[%s] Rejected (score %d), retrying...",
+                        "[%s] Rejected (score %d), passing reviewer notes to Planejador...",
                         context.planejamento_id,
                         context.revisao.score if context.revisao else 0,
                     )
+                    # Notas do revisor sao passadas via context.revisao para o Planejador
                 else:
-                    logger.warning("[%s] Max iterations reached.", context.planejamento_id)
+                    logger.warning(
+                        "[%s] Max iterations reached (score %d). Marking as completed.",
+                        context.planejamento_id,
+                        context.revisao.score if context.revisao else 0,
+                    )
 
             context.completed_at = datetime.now(timezone.utc).isoformat()
             context.current_status = "concluido"

@@ -17,35 +17,27 @@ class EstrategistaAgent(BaseAgent):
         tipos_str = json.dumps(tipos_conteudo, ensure_ascii=False)
 
         system_prompt = (
-            "Voce e um estrategista de conteudo digital com experiencia em "
-            "planejamento editorial mensal para redes sociais.\n\n"
-            "Sua tarefa e definir a estrategia de conteudo do mes, escolhendo "
-            "temas, distribuindo por pilares de conteudo e criando um calendario "
-            "de publicacoes.\n\n"
-            "Voce deve retornar APENAS um JSON valido (sem markdown, sem ```json) "
-            "com a seguinte estrutura:\n"
+            "Estrategista de conteudo digital. Retorne APENAS JSON valido (sem markdown).\n\n"
+            "Estrutura obrigatoria:\n"
             "{\n"
             '  "temas": [{"tema": str, "pilar": str, "justificativa": str}],\n'
             '  "calendario": [{"data": str, "tipo": str, "titulo": str}],\n'
             '  "resumo_estrategico": str\n'
             "}\n\n"
-            "Diretrizes:\n"
-            "- Distribua os temas equilibradamente entre os pilares do cliente\n"
+            "Regras:\n"
+            "- Cada pilar DEVE ter pelo menos 1 peca de conteudo\n"
+            "- Distribua as datas UNIFORMEMENTE ao longo do mes (nao concentre na 1a semana)\n"
             "- Varie os tipos de conteudo (video_roteiro, arte_estatica, carrossel)\n"
-            "- Considere as tendencias e datas comemorativas da pesquisa\n"
-            "- Distribua os temas para que cada pilar tenha pelo menos 1 peca de conteudo\n"
-            "- Se o historico de temas anteriores foi fornecido, NUNCA repita temas identicos\n"
-            "- EVITE repetir temas do historico dos ultimos 3 meses\n"
-            "- O calendario deve cobrir o mes inteiro com datas especificas\n"
-            "- Cada tema deve ter uma justificativa estrategica\n"
-            "- O resumo estrategico deve explicar a logica geral do planejamento\n"
+            "- Considere tendencias e datas comemorativas da pesquisa\n"
+            "- Se o operador informou produtos a promover, pelo menos 50% dos temas devem girar em torno desses produtos\n"
+            "- Se historico de temas foi fornecido, NUNCA repita temas identicos\n"
+            "- Cada tema deve ter justificativa estrategica\n"
             "- Tudo em portugues brasileiro\n\n"
-            "IMPORTANTE: Separe CONTEXTO de DIRECIONAMENTO:\n"
-            "- O perfil do cliente (nome, nicho, publico, tom de voz, pilares) e CONTEXTO — quem e o cliente\n"
-            "- Os inputs extras (produtos a promover, referencias, feedback da reuniao) sao DIRECIONAMENTO — o que fazer este mes\n"
-            "- Os temas devem ser direcionados pelo DIRECIONAMENTO, nao pelo CONTEXTO\n"
-            "- Se o cliente quer promover produtos especificos, os temas devem girar em torno desses produtos\n"
-            "- Se ha referencias do mes anterior, use-as como inspiracao para formatos e abordagens"
+            "CONTEXTO vs DIRECIONAMENTO:\n"
+            "- Perfil do cliente (nome, nicho, publico, tom, pilares) = CONTEXTO (quem e o cliente)\n"
+            "- Inputs extras (produtos, referencias, feedback) = DIRECIONAMENTO (o que fazer este mes)\n"
+            "- Temas devem seguir o DIRECIONAMENTO\n"
+            "- Referencias do mes anterior = inspiracao para formatos e abordagens"
         )
 
         user_prompt = (
@@ -98,7 +90,7 @@ class EstrategistaAgent(BaseAgent):
             model=settings.LLM_MODEL,
             messages=messages,
             temperature=0.6,
-            max_tokens=6144,
+            max_tokens=4096,
             response_format={"type": "json_object"},
         )
 

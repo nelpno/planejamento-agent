@@ -26,35 +26,24 @@ class RevisorAgent(BaseAgent):
         ]
 
         system_prompt = (
-            "Voce e um revisor de conteudo digital especializado em controle "
-            "de qualidade para planejamentos de marketing.\n\n"
-            "Sua tarefa e revisar os conteudos gerados, validar a qualidade, "
-            "consistencia e aderencia ao perfil do cliente, e atribuir uma "
-            "nota de 0 a 100.\n\n"
-            "Voce deve retornar APENAS um JSON valido (sem markdown, sem ```json) "
-            "com a seguinte estrutura:\n"
+            "Revisor de conteudo digital. Retorne APENAS JSON valido (sem markdown).\n\n"
+            "Estrutura obrigatoria:\n"
             "{\n"
-            '  "score": int,\n'
+            '  "score": int (0-100),\n'
             '  "aprovado": bool,\n'
             '  "notas": [str],\n'
-            '  "conteudos_revisados": [{}]\n'
+            '  "rubrica": {"tom_de_voz": int, "ctas_destino": int, "pilares_distribuidos": int, "storytelling_engajamento": int, "completude_tecnica": int}\n'
             "}\n\n"
-            "Criterios de avaliacao (peso igual):\n"
-            "1. Tom de voz: Os conteudos respeitam o tom definido pelo cliente?\n"
-            "2. CTAs: Todas as pecas possuem chamadas para acao claras?\n"
-            "3. Distribuicao de pilares: Os pilares estao equilibrados?\n"
-            "4. Variacao de frameworks: Ha diversidade nos frameworks usados?\n"
-            "5. Qualidade do copy: Os textos sao persuasivos e sem erros?\n"
-            "6. Coerencia estrategica: Os conteudos seguem a estrategia definida?\n"
-            "7. Completude: Todos os campos obrigatorios estao preenchidos?\n"
-            "8. Variacoes A/B: Os campos copy_alternativa estao preenchidos nas variacoes_ab?\n\n"
-            "Diretrizes:\n"
-            f"- Score minimo para aprovacao: {settings.QUALITY_THRESHOLD}\n"
-            "- Se reprovar, liste os problemas especificos em 'notas'\n"
-            "- Se aprovar, inclua pontos positivos em 'notas'\n"
-            "- Em 'conteudos_revisados', inclua apenas os conteudos que "
-            "precisaram de correcoes, com as correcoes ja aplicadas\n"
-            "- Se o score ficar entre 70-79, aprove mas liste os ajustes menores aplicados\n"
+            "RUBRICA (cada criterio 0-20, soma = score):\n"
+            "- tom_de_voz (0-20): Conteudos respeitam o tom definido pelo cliente?\n"
+            "- ctas_destino (0-20): Todos os CTAs sao claros e mencionam o destino correto?\n"
+            "- pilares_distribuidos (0-20): Pilares equilibrados, datas bem distribuidas?\n"
+            "- storytelling_engajamento (0-20): Ganchos impactantes, storytelling unico, nao generico?\n"
+            "- completude_tecnica (0-20): Campos preenchidos, comprimentos adequados (gancho <=2 frases, copy arte <=4 frases, slides <=3 frases), variacoes A/B presentes?\n\n"
+            f"Score minimo para aprovacao: {settings.QUALITY_THRESHOLD}\n"
+            "- Se score < 70: REPROVAR. Notas devem listar problemas especificos para correcao.\n"
+            "- Se score >= 70: APROVAR. Notas podem incluir sugestoes menores.\n"
+            "- NAO retorne conteudos. Apenas score + rubrica + notas.\n"
             "- Tudo em portugues brasileiro"
         )
 
@@ -90,7 +79,7 @@ class RevisorAgent(BaseAgent):
             model=settings.LLM_MODEL,
             messages=messages,
             temperature=0.1,
-            max_tokens=6144,
+            max_tokens=4096,
             response_format={"type": "json_object"},
         )
 
@@ -99,7 +88,7 @@ class RevisorAgent(BaseAgent):
             score=data.get("score", 0),
             aprovado=data.get("aprovado", False),
             notas=data.get("notas", []),
-            conteudos_revisados=data.get("conteudos_revisados", []),
+            conteudos_revisados=[],  # Revisor nao retorna mais conteudos
         )
         return context
 
@@ -110,6 +99,5 @@ class RevisorAgent(BaseAgent):
         status = "APROVADO" if r.aprovado else "REPROVADO"
         return (
             f"Score: {r.score}/100 - {status}. "
-            f"{len(r.notas)} notas, "
-            f"{len(r.conteudos_revisados)} conteudos corrigidos"
+            f"{len(r.notas)} notas"
         )

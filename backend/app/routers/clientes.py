@@ -44,7 +44,11 @@ Retorne APENAS JSON válido com esta estrutura:
   "redes_sociais": {"instagram": "@handle", "site": "url"},
   "nome_empresa": "Nome da empresa extraído do texto",
   "nicho": "Nicho/segmento de mercado da empresa",
-  "instrucoes": "Instruções especiais baseadas no kick-off (PUV, sazonalidade, estratégias que funcionam, etc.)"
+  "instrucoes": "Instruções especiais baseadas no kick-off (PUV, sazonalidade, estratégias que funcionam, etc.)",
+  "foco_padrao": "geracao_leads ou vendas_ecommerce ou crescimento_organico ou branding ou lancamento ou retencao",
+  "destino_padrao": "whatsapp ou site ou dm_instagram ou loja_online ou agendamento ou telefone",
+  "tipo_uso_padrao": "organico ou pago ou ambos",
+  "plataformas_padrao": ["instagram", "tiktok", "...outras relevantes"]
 }
 
 Regras:
@@ -53,7 +57,11 @@ Regras:
 - Extraia concorrentes mencionados
 - As dores devem vir do público-alvo e dos objetivos
 - Tipos de conteúdo devem ser adequados ao nicho
-- Instruções devem incluir PUV, sazonalidade e estratégias vencedoras mencionadas"""
+- Instruções devem incluir PUV, sazonalidade e estratégias vencedoras mencionadas
+- foco_padrao: escolha UM valor entre geracao_leads, vendas_ecommerce, crescimento_organico, branding, lancamento, retencao
+- destino_padrao: escolha UM valor entre whatsapp, site, dm_instagram, loja_online, agendamento, telefone
+- tipo_uso_padrao: escolha UM valor entre organico, pago, ambos
+- plataformas_padrao: lista de plataformas relevantes (instagram, tiktok, youtube, linkedin, facebook)"""
 
 
 @router.post("/kick-off/preview")
@@ -94,6 +102,10 @@ async def preview_kickoff(data: KickOffInput):
         "concorrentes": perfil.get("concorrentes"),
         "redes_sociais": perfil.get("redes_sociais"),
         "instrucoes": perfil.get("instrucoes"),
+        "foco_padrao": perfil.get("foco_padrao"),
+        "destino_padrao": perfil.get("destino_padrao"),
+        "tipo_uso_padrao": perfil.get("tipo_uso_padrao"),
+        "plataformas_padrao": perfil.get("plataformas_padrao"),
     }
 
 
@@ -129,10 +141,18 @@ Retorne APENAS JSON válido com esta estrutura:
     {"nome": "Nome", "instagram": "@handle", "site": "url"}
   ],
   "redes_sociais": {"instagram": "@handle", "site": "url"},
-  "instrucoes": "Insights encontrados na pesquisa: PUV, diferenciais, estratégia atual"
+  "instrucoes": "Insights encontrados na pesquisa: PUV, diferenciais, estratégia atual",
+  "foco_padrao": "geracao_leads ou vendas_ecommerce ou crescimento_organico ou branding ou lancamento ou retencao",
+  "destino_padrao": "whatsapp ou site ou dm_instagram ou loja_online ou agendamento ou telefone",
+  "tipo_uso_padrao": "organico ou pago ou ambos",
+  "plataformas_padrao": ["instagram", "tiktok", "...outras relevantes"]
 }
 
-Pilares devem somar 100%. Baseie tudo em dados REAIS encontrados na pesquisa."""
+Pilares devem somar 100%. Baseie tudo em dados REAIS encontrados na pesquisa.
+- foco_padrao: escolha UM valor entre geracao_leads, vendas_ecommerce, crescimento_organico, branding, lancamento, retencao
+- destino_padrao: escolha UM valor entre whatsapp, site, dm_instagram, loja_online, agendamento, telefone
+- tipo_uso_padrao: escolha UM valor entre organico, pago, ambos
+- plataformas_padrao: lista de plataformas relevantes (instagram, tiktok, youtube, linkedin, facebook)"""
 
 
 @router.post("/kick-off/discover")
@@ -179,6 +199,10 @@ async def discover_kickoff(data: DiscoverInput):
     if data.site and not redes.get("site"):
         redes["site"] = data.site
     perfil["redes_sociais"] = redes
+
+    # Garantir que os campos de defaults existam no retorno
+    for key in ("foco_padrao", "destino_padrao", "tipo_uso_padrao", "plataformas_padrao"):
+        perfil.setdefault(key, None)
 
     return perfil
 
