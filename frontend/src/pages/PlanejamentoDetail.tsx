@@ -126,6 +126,7 @@ export default function PlanejamentoDetail() {
       navigate('/historico');
     } catch (err: any) {
       setActionError(err?.response?.data?.detail || 'Erro ao excluir planejamento.');
+    } finally {
       setActionLoading(false);
     }
   }
