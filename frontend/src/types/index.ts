@@ -39,6 +39,8 @@ export interface Planejamento {
   produtos_promover: string | null;
   referencias_anteriores: string | null;
   feedback_reuniao: string | null;
+  data_envio_cliente: string | null;
+  aprovado_cliente: boolean | null;
   created_at: string;
   updated_at: string;
 }

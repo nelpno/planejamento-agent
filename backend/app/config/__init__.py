@@ -16,9 +16,9 @@ class Settings(BaseSettings):
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
 
     # LLM Models
-    LLM_MODEL: str = "anthropic/claude-sonnet-4"
-    LLM_MODEL_FAST: str = "anthropic/claude-haiku-4.5"
-    LLM_MODEL_SEARCH: str = "perplexity/sonar-pro"  # Web search nativo
+    LLM_MODEL: str = "anthropic/claude-sonnet-4-6"  # Gerador principal
+    LLM_MODEL_FAST: str = "anthropic/claude-haiku-4-5"  # Ajustador (econômico)
+    LLM_MODEL_SEARCH: str = "perplexity/sonar-pro"  # Pesquisador (web search)
 
     # Database (no default — must be set via env)
     DATABASE_URL: str

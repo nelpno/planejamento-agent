@@ -67,7 +67,7 @@ class AjustadorAgent(BaseAgent):
         ]
 
         response = await self.client.chat(
-            model=settings.LLM_MODEL,
+            model=settings.LLM_MODEL_FAST,  # Haiku — tarefa simples, mais econômico
             messages=messages,
             temperature=0.3,
             max_tokens=12288,

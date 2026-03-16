@@ -58,6 +58,8 @@ class PlanejamentoResponse(BaseModel):
     produtos_promover: str | None = None
     referencias_anteriores: str | None = None
     feedback_reuniao: str | None = None
+    data_envio_cliente: datetime | None = None
+    aprovado_cliente: bool | None = None
     created_at: datetime
     updated_at: datetime | None = None
 

@@ -19,6 +19,7 @@ export default function Dashboard() {
     em_geracao: 0,
   });
   const [recentPlanejamentos, setRecentPlanejamentos] = useState<(Planejamento & { cliente_nome?: string })[]>([]);
+  const [clientesPendentes, setClientesPendentes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,6 +52,14 @@ export default function Dashboard() {
           .map((p) => ({ ...p, cliente_nome: clienteMap.get(p.cliente_id) || 'Desconhecido' }));
 
         setRecentPlanejamentos(recent);
+
+        // Clientes sem planejamento no mes atual
+        const clientesComPlanejamento = new Set(
+          planejamentos
+            .filter((p) => p.mes_referencia?.startsWith(currentMonth))
+            .map((p) => p.cliente_id)
+        );
+        setClientesPendentes(clientes.filter((c) => !clientesComPlanejamento.has(c.id)));
       } catch (err) {
         console.error('Erro ao carregar dashboard:', err);
       } finally {
@@ -101,6 +110,36 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+
+      {/* Clientes Pendentes */}
+      {clientesPendentes.length > 0 && (
+        <div className="card mb-8">
+          <h2 className="text-xl font-bold text-primary mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            Clientes Pendentes
+            <span className="text-sm font-normal text-gray-400">({clientesPendentes.length} sem planejamento este mes)</span>
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {clientesPendentes.map((cliente) => (
+              <div key={cliente.id} className="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="min-w-0">
+                  <p className="font-medium text-primary truncate">{cliente.nome_empresa}</p>
+                  <p className="text-xs text-gray-500">{cliente.nicho}</p>
+                </div>
+                <Link
+                  to={`/novo-planejamento?cliente=${cliente.id}`}
+                  className="ml-3 shrink-0 px-3 py-1.5 bg-accent text-white text-xs font-medium rounded-lg hover:bg-accent/90 transition-colors"
+                >
+                  Criar Planejamento
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Recent */}
       <div className="card">

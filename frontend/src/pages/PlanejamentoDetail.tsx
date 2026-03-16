@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import api, { API_URL } from '../api/client';
 import { connectPlanejamentoWS } from '../api/websocket';
 import StatusBadge from '../components/StatusBadge';
@@ -10,6 +10,7 @@ import type { Planejamento, Conteudo, PipelineLog, Cliente } from '../types';
 
 export default function PlanejamentoDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [planejamento, setPlanejamento] = useState<Planejamento | null>(null);
   const [conteudos, setConteudos] = useState<Conteudo[]>([]);
   const [cliente, setCliente] = useState<Cliente | null>(null);
@@ -111,6 +112,47 @@ export default function PlanejamentoDetail() {
     } catch (err: any) {
       console.error('Erro ao aprovar:', err);
       setActionError(err?.response?.data?.detail || 'Erro ao aprovar planejamento. Tente novamente.');
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!id) return;
+    if (!confirm('Tem certeza que deseja excluir este planejamento?')) return;
+    setActionLoading(true);
+    try {
+      await api.delete(`/planejamentos/${id}`);
+      navigate('/historico');
+    } catch (err: any) {
+      setActionError(err?.response?.data?.detail || 'Erro ao excluir planejamento.');
+      setActionLoading(false);
+    }
+  }
+
+  async function handleDuplicar() {
+    if (!id) return;
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      const res = await api.post(`/planejamentos/${id}/duplicar`);
+      navigate(`/planejamentos/${res.data.id}`);
+    } catch (err: any) {
+      setActionError(err?.response?.data?.detail || 'Erro ao duplicar planejamento.');
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleMarcarEnviado() {
+    if (!id) return;
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      await api.post(`/planejamentos/${id}/marcar-enviado`);
+      fetchData();
+    } catch (err: any) {
+      setActionError(err?.response?.data?.detail || 'Erro ao marcar como enviado.');
     } finally {
       setActionLoading(false);
     }
@@ -371,6 +413,53 @@ export default function PlanejamentoDetail() {
               </svg>
               Baixar DOCX (editável)
             </a>
+          </div>
+
+          {/* Acoes secundarias */}
+          <div className="mb-6 flex flex-wrap gap-3">
+            <button
+              onClick={handleDelete}
+              disabled={actionLoading}
+              className="inline-flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium text-sm disabled:opacity-50"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Deletar
+            </button>
+            <button
+              onClick={handleDuplicar}
+              disabled={actionLoading}
+              className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm disabled:opacity-50"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              Duplicar p/ proximo mes
+            </button>
+            {planejamento.status === 'aprovado' && !planejamento.data_envio_cliente && (
+              <button
+                onClick={handleMarcarEnviado}
+                disabled={actionLoading}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm disabled:opacity-50"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Marcar como Enviado
+              </button>
+            )}
+            {planejamento.data_envio_cliente && (
+              <span className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm font-medium">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Enviado em {new Date(planejamento.data_envio_cliente).toLocaleDateString('pt-BR')}
+              </span>
+            )}
           </div>
 
           {/* Action error message */}

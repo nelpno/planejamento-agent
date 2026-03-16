@@ -46,6 +46,8 @@ class Planejamento(Base):
     produtos_promover: Mapped[str | None] = mapped_column(Text, nullable=True)
     referencias_anteriores: Mapped[str | None] = mapped_column(Text, nullable=True)
     feedback_reuniao: Mapped[str | None] = mapped_column(Text, nullable=True)
+    data_envio_cliente: Mapped[datetime | None] = mapped_column(nullable=True)
+    aprovado_cliente: Mapped[bool | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         server_default=func.now(), nullable=False
     )

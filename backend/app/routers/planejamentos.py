@@ -338,6 +338,76 @@ async def ajustar_planejamento(
     return {"status": "em_geracao", "message": "Ajustando planejamento com feedback (Ajustador + Revisor)"}
 
 
+@router.delete("/{planejamento_id}", status_code=204)
+async def delete_planejamento(
+    planejamento_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+):
+    result = await session.execute(
+        select(Planejamento).where(Planejamento.id == planejamento_id)
+    )
+    planejamento = result.scalar_one_or_none()
+    if not planejamento:
+        raise HTTPException(status_code=404, detail="Planejamento não encontrado")
+    await session.delete(planejamento)
+    await session.commit()
+
+
+@router.post("/{planejamento_id}/duplicar")
+async def duplicar_planejamento(
+    planejamento_id: uuid.UUID,
+    mes_destino: str | None = None,
+    session: AsyncSession = Depends(get_session),
+):
+    result = await session.execute(
+        select(Planejamento).where(Planejamento.id == planejamento_id)
+    )
+    original = result.scalar_one_or_none()
+    if not original:
+        raise HTTPException(status_code=404, detail="Planejamento não encontrado")
+
+    # Calculate next month if not specified
+    if not mes_destino:
+        year, month = map(int, original.mes_referencia.split("-"))
+        month += 1
+        if month > 12:
+            month = 1
+            year += 1
+        mes_destino = f"{year}-{month:02d}"
+
+    novo = Planejamento(
+        cliente_id=original.cliente_id,
+        mes_referencia=mes_destino,
+        status="rascunho",
+        foco=original.foco,
+        destino_conversao=original.destino_conversao,
+        tipo_conteudo_uso=original.tipo_conteudo_uso,
+        plataformas=original.plataformas,
+        produtos_promover=original.produtos_promover,
+    )
+    session.add(novo)
+    await session.commit()
+
+    return {"id": str(novo.id), "mes_referencia": mes_destino, "status": "rascunho"}
+
+
+@router.post("/{planejamento_id}/marcar-enviado")
+async def marcar_enviado(
+    planejamento_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+):
+    result = await session.execute(
+        select(Planejamento).where(Planejamento.id == planejamento_id)
+    )
+    planejamento = result.scalar_one_or_none()
+    if not planejamento:
+        raise HTTPException(status_code=404, detail="Planejamento não encontrado")
+
+    planejamento.data_envio_cliente = datetime.now(timezone.utc)
+    await session.commit()
+    return {"status": "enviado", "data_envio": planejamento.data_envio_cliente.isoformat()}
+
+
 @router.get("/{planejamento_id}/download")
 async def download_pdf(
     planejamento_id: uuid.UUID,

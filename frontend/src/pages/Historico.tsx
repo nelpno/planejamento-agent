@@ -122,6 +122,16 @@ export default function Historico() {
 
                 <StatusBadge status={p.status} size="sm" />
 
+                {p.data_envio_cliente ? (
+                  <span className="px-2.5 py-1 bg-green-50 text-green-700 border border-green-200 text-xs rounded-full font-medium whitespace-nowrap">
+                    Enviado {new Date(p.data_envio_cliente).toLocaleDateString('pt-BR')}
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-1 bg-gray-100 text-gray-500 text-xs rounded-full font-medium whitespace-nowrap">
+                    Pendente
+                  </span>
+                )}
+
                 <div className="flex items-center gap-2">
                   {p.pdf_url && (
                     <a
