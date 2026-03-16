@@ -57,13 +57,13 @@
 
     <!-- Roteiros de Vídeo -->
     {% set video_count = [0] %}
-    {% for item in conteudos %}{% if item.tipo == "video_roteiro" %}{% if video_count.append(video_count.pop() + 1) %}{% endif %}{% endif %}{% endfor %}
+    {% for item in conteudos %}{% if "video" in item.tipo %}{% if video_count.append(video_count.pop() + 1) %}{% endif %}{% endif %}{% endfor %}
     {% if video_count[0] > 0 %}
     <section class="section">
         <h2 class="section-title">ROTEIROS DE VÍDEO</h2>
         {% set num = [0] %}
         {% for item in conteudos %}
-        {% if item.tipo == "video_roteiro" %}
+        {% if "video" in item.tipo %}
         {% if num.append(num.pop() + 1) %}{% endif %}
         <div class="conteudo-card">
             <div class="conteudo-header">
@@ -115,13 +115,13 @@
 
     <!-- Artes Estáticas -->
     {% set arte_count = [0] %}
-    {% for item in conteudos %}{% if item.tipo == "arte_estatica" %}{% if arte_count.append(arte_count.pop() + 1) %}{% endif %}{% endif %}{% endfor %}
+    {% for item in conteudos %}{% if "arte" in item.tipo %}{% if arte_count.append(arte_count.pop() + 1) %}{% endif %}{% endif %}{% endfor %}
     {% if arte_count[0] > 0 %}
     <section class="section">
         <h2 class="section-title">ARTES ESTÁTICAS</h2>
         {% set num = [0] %}
         {% for item in conteudos %}
-        {% if item.tipo == "arte_estatica" %}
+        {% if "arte" in item.tipo %}
         {% if num.append(num.pop() + 1) %}{% endif %}
         <div class="conteudo-card">
             <div class="conteudo-header">

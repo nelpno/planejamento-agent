@@ -43,7 +43,7 @@ export default function ConteudoCard({ conteudo }: ConteudoCardProps) {
 
       {/* Body - render content by type */}
       <div className="space-y-3">
-        {conteudo.tipo === 'carrossel' ? (
+        {conteudo.tipo.includes('carrossel') ? (
           <>
             {/* Carrossel: render each slide with full content */}
             {conteudo.conteudo.capa && (
@@ -94,7 +94,7 @@ export default function ConteudoCard({ conteudo }: ConteudoCardProps) {
               </div>
             )}
           </>
-        ) : conteudo.tipo === 'video_roteiro' ? (
+        ) : conteudo.tipo.includes('video') ? (
           <>
             {/* Vídeo: render gancho, desenvolvimento, CTA with visual hierarchy */}
             {conteudo.conteudo.gancho && (

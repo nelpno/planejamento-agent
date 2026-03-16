@@ -138,10 +138,18 @@ export default function PlanejamentoDetail() {
     l.agent_name.toLowerCase().includes('ajustador')
   ) || (planejamento?.feedback != null && planejamento?.status === 'em_geracao');
 
-  // Group conteudos by tipo
+  // Group conteudos by normalized tipo (LLM may generate variants like carrossel_franquia)
+  function normalizeTipo(tipo: string): string {
+    if (tipo.includes('video')) return 'video_roteiro';
+    if (tipo.includes('arte')) return 'arte_estatica';
+    if (tipo.includes('carrossel')) return 'carrossel';
+    return tipo;
+  }
+
   const conteudosByTipo = conteudos.reduce<Record<string, Conteudo[]>>((acc, c) => {
-    if (!acc[c.tipo]) acc[c.tipo] = [];
-    acc[c.tipo].push(c);
+    const key = normalizeTipo(c.tipo);
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(c);
     return acc;
   }, {});
 
