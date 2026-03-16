@@ -18,6 +18,7 @@ export default function PlanejamentoDetail() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
@@ -265,21 +266,35 @@ export default function PlanejamentoDetail() {
             </div>
           )}
 
-          {/* Conteúdos por tipo */}
-          {Object.entries(conteudosByTipo).map(([tipo, items]) => (
-            <div key={tipo} className="mb-6">
-              <h2 className="text-xl font-bold text-primary mb-4">
-                {tipoLabels[tipo] || tipo}
-              </h2>
-              <div className="space-y-4">
-                {items
-                  .sort((a, b) => a.ordem - b.ordem)
-                  .map((c) => (
-                    <ConteudoCard key={c.id} conteudo={c} />
-                  ))}
+          {/* Conteúdos por tipo — com collapse */}
+          {Object.entries(conteudosByTipo).map(([tipo, items]) => {
+            const isCollapsed = collapsedSections[tipo] ?? false;
+            return (
+              <div key={tipo} className="mb-6">
+                <button
+                  onClick={() => setCollapsedSections(prev => ({ ...prev, [tipo]: !isCollapsed }))}
+                  className="w-full flex items-center justify-between text-xl font-bold text-primary mb-4 hover:text-accent transition-colors"
+                >
+                  <span className="flex items-center gap-2">
+                    {tipoLabels[tipo] || tipo}
+                    <span className="text-sm font-normal text-gray-400">({items.length})</span>
+                  </span>
+                  <svg className={`w-5 h-5 transition-transform ${isCollapsed ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {!isCollapsed && (
+                  <div className="space-y-4">
+                    {items
+                      .sort((a, b) => a.ordem - b.ordem)
+                      .map((c) => (
+                        <ConteudoCard key={c.id} conteudo={c} />
+                      ))}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* Calendário */}
           {planejamento.calendario && planejamento.calendario.length > 0 && (
