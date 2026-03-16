@@ -3,74 +3,38 @@ import uuid
 from datetime import datetime, timezone
 
 from app.agents.context import PipelineContext
-from app.agents.estrategista import EstrategistaAgent
+from app.agents.gerador import GeradorAgent
 from app.agents.pesquisador import PesquisadorAgent
-from app.agents.planejador import PlanejadorAgent
-from app.agents.revisor import RevisorAgent
 from app.providers.openrouter_client import OpenRouterClient
 
 logger = logging.getLogger(__name__)
 
 
 class PipelineOrchestrator:
-    """Orchestrates the 4-agent planning pipeline with review loop."""
+    """Orchestrates the 2-agent planning pipeline: Pesquisador -> Gerador."""
 
     # Fix #10: Accept session_factory from caller instead of creating own engine
     def __init__(self, session_factory=None):
         self.client = OpenRouterClient()
         self.pesquisador = PesquisadorAgent(self.client)
-        self.estrategista = EstrategistaAgent(self.client)
-        self.planejador = PlanejadorAgent(self.client)
-        self.revisor = RevisorAgent(self.client)
+        self.gerador = GeradorAgent(self.client)
         self._session_factory = session_factory
 
     async def run(self, context: PipelineContext) -> PipelineContext:
-        """Execute the full pipeline: Pesquisador -> Estrategista -> Planejador -> Revisor (loop)."""
+        """Execute the full pipeline: Pesquisador -> Gerador."""
         context.started_at = datetime.now(timezone.utc).isoformat()
         context.current_status = "em_geracao"
 
         try:
-            # Step 1: Pesquisador
+            # Step 1: Pesquisador (web search real)
             logger.info("[%s] Starting Pesquisador", context.planejamento_id)
             context = await self.pesquisador.run(context)
             await self._save_progress(context, "pesquisador")
 
-            # Step 2: Estrategista
-            logger.info("[%s] Starting Estrategista", context.planejamento_id)
-            context = await self.estrategista.run(context)
-            await self._save_progress(context, "estrategista")
-
-            # Step 3 + 4: Planejador + Revisor loop
-            for iteration in range(1, context.max_iterations + 1):
-                context.iteration = iteration
-                logger.info("[%s] Planejador (iteration %d)", context.planejamento_id, iteration)
-                context = await self.planejador.run(context)
-                await self._save_progress(context, "planejador")
-
-                logger.info("[%s] Revisor (iteration %d)", context.planejamento_id, iteration)
-                context = await self.revisor.run(context)
-                await self._save_progress(context, "revisor")
-
-                if context.revisao and context.revisao.aprovado:
-                    logger.info(
-                        "[%s] Approved with score %d at iteration %d",
-                        context.planejamento_id, context.revisao.score, iteration,
-                    )
-                    break
-
-                if iteration < context.max_iterations:
-                    logger.info(
-                        "[%s] Rejected (score %d), passing reviewer notes to Planejador...",
-                        context.planejamento_id,
-                        context.revisao.score if context.revisao else 0,
-                    )
-                    # Notas do revisor sao passadas via context.revisao para o Planejador
-                else:
-                    logger.warning(
-                        "[%s] Max iterations reached (score %d). Marking as completed.",
-                        context.planejamento_id,
-                        context.revisao.score if context.revisao else 0,
-                    )
+            # Step 2: Gerador (estratégia + conteúdo em 1 chamada)
+            logger.info("[%s] Starting Gerador", context.planejamento_id)
+            context = await self.gerador.run(context)
+            await self._save_progress(context, "gerador")
 
             context.completed_at = datetime.now(timezone.utc).isoformat()
             context.current_status = "concluido"

@@ -133,11 +133,6 @@ export default function PlanejamentoDetail() {
     }
   }
 
-  // Detect if this is an ajuste pipeline (vs full generation)
-  const isAjuste = pipelineLogs.some(l =>
-    l.agent_name.toLowerCase().includes('ajustador')
-  ) || (planejamento?.feedback != null && planejamento?.status === 'em_geracao');
-
   // Group conteudos by normalized tipo (LLM may generate variants like carrossel_franquia)
   function normalizeTipo(tipo: string): string {
     if (tipo.includes('video')) return 'video_roteiro';
@@ -200,7 +195,7 @@ export default function PlanejamentoDetail() {
       {/* Em geração - Pipeline */}
       {planejamento.status === 'em_geracao' && (
         <div className="mb-8">
-          <PipelineProgress logs={pipelineLogs} currentAgent={currentAgent} isAjuste={isAjuste} />
+          <PipelineProgress logs={pipelineLogs} currentAgent={currentAgent} />
           {/* Show retry button if stuck for >5 min */}
           {planejamento.created_at && (Date.now() - new Date(planejamento.created_at).getTime()) > 5 * 60 * 1000 && (
             <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
@@ -327,7 +322,7 @@ export default function PlanejamentoDetail() {
                     {planejamento.calendario.map((item, i) => (
                       <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
                         <td className="py-3 px-4 font-mono text-gray-700">
-                          {new Date(item.data + 'T00:00:00').toLocaleDateString('pt-BR')}
+                          {item.data}
                         </td>
                         <td className="py-3 px-4">
                           <span className="px-2 py-0.5 bg-secondary/10 text-secondary text-xs rounded-full font-medium">

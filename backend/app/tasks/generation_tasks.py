@@ -56,18 +56,15 @@ async def _run_pipeline(task, planejamento_id: str, pipeline_context_dict: dict)
         await _save_results(session_factory, planejamento_id, context)
 
         logger.info(
-            "Pipeline completed for planejamento %s (score: %d, iterations: %d)",
+            "Pipeline completed for planejamento %s (conteudos: %d)",
             planejamento_id,
-            context.revisao.score if context.revisao else 0,
-            context.iteration,
+            len(context.conteudos),
         )
 
         return {
             "planejamento_id": planejamento_id,
             "status": "revisao",
-            "score": context.revisao.score if context.revisao else 0,
             "total_conteudos": len(context.conteudos),
-            "iterations": context.iteration,
         }
 
     except Exception as e:
@@ -87,7 +84,7 @@ async def _run_pipeline(task, planejamento_id: str, pipeline_context_dict: dict)
 
 
 async def _run_ajuste_pipeline(task, planejamento_id: str, pipeline_context_dict: dict):
-    """Ajuste pipeline: Ajustador → Revisor (sem Pesquisador/Estrategista)."""
+    """Ajuste pipeline: Ajustador apenas (sem Revisor — operador revisa manualmente)."""
     engine, session_factory = _create_session_factory()
 
     try:
@@ -103,7 +100,6 @@ async def _run_ajuste_pipeline(task, planejamento_id: str, pipeline_context_dict
             )
 
         from app.agents.ajustador import AjustadorAgent
-        from app.agents.revisor import RevisorAgent
         from app.providers.openrouter_client import OpenRouterClient
 
         client = OpenRouterClient()
@@ -111,12 +107,6 @@ async def _run_ajuste_pipeline(task, planejamento_id: str, pipeline_context_dict
             # Step 1: Ajustador modifica conteúdo com base no feedback
             ajustador = AjustadorAgent(client)
             context = await ajustador.run(context)
-
-            # Step 2: Revisor valida as mudanças
-            revisor = RevisorAgent(client)
-            context = await revisor.run(context)
-
-            # Revisor agora retorna apenas score + notas (sem conteudos_revisados)
         finally:
             await client.close()
 
@@ -124,9 +114,8 @@ async def _run_ajuste_pipeline(task, planejamento_id: str, pipeline_context_dict
         await _save_results(session_factory, planejamento_id, context)
 
         logger.info(
-            "Ajuste completed for %s (score: %d)",
+            "Ajuste completed for %s",
             planejamento_id,
-            context.revisao.score if context.revisao else 0,
         )
         return {"planejamento_id": planejamento_id, "status": "revisao"}
 
@@ -137,6 +126,9 @@ async def _run_ajuste_pipeline(task, planejamento_id: str, pipeline_context_dict
         except Exception:
             pass
         raise
+
+    finally:
+        await engine.dispose()
 
 
 async def _update_planejamento_status(
@@ -222,11 +214,31 @@ async def _save_results(session_factory, planejamento_id: str, context: Pipeline
             "nome_empresa": context.cliente.nome_empresa,
             "nicho": context.cliente.nicho,
         }
+        # If estrategia is None (ajuste flow), fetch existing data from DB
+        resumo = context.estrategia.resumo_estrategico if context.estrategia else ""
+        temas = context.estrategia.temas if context.estrategia else []
+        calendario = context.estrategia.calendario if context.estrategia else []
+
+        if not resumo or not temas:
+            try:
+                async with session_factory() as session:
+                    from sqlalchemy import select
+                    result = await session.execute(
+                        select(Planejamento).where(Planejamento.id == plan_id)
+                    )
+                    existing = result.scalar_one_or_none()
+                    if existing:
+                        resumo = resumo or existing.resumo_estrategico or ""
+                        temas = temas or existing.temas or []
+                        calendario = calendario or existing.calendario or []
+            except Exception:
+                pass
+
         planejamento_dict = {
             "mes_referencia": context.mes_referencia,
-            "resumo_estrategico": context.estrategia.resumo_estrategico if context.estrategia else "",
-            "temas": context.estrategia.temas if context.estrategia else [],
-            "calendario": context.estrategia.calendario if context.estrategia else [],
+            "resumo_estrategico": resumo,
+            "temas": temas,
+            "calendario": calendario,
         }
         conteudos_list = [
             {
