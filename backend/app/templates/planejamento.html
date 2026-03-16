@@ -163,36 +163,60 @@
     {% endif %}
 
     <!-- Carrosséis -->
-    {% if carrosseis %}
+    {% set carr_count = [0] %}
+    {% for item in conteudos %}{% if "carrossel" in item.tipo %}{% if carr_count.append(carr_count.pop() + 1) %}{% endif %}{% endif %}{% endfor %}
+    {% if carr_count[0] > 0 %}
     <section class="section">
         <h2 class="section-title">CARROSSÉIS</h2>
-        {% for carrossel in carrosseis %}
+        {% set num = [0] %}
+        {% for item in conteudos %}
+        {% if "carrossel" in item.tipo %}
+        {% if num.append(num.pop() + 1) %}{% endif %}
         <div class="conteudo-card">
             <div class="conteudo-header">
-                <span class="conteudo-numero">CARROSSEL {{ loop.index }}</span>
-                <span class="conteudo-titulo">{{ carrossel.titulo }}</span>
-                {% if carrossel.framework %}
-                <span class="framework-badge">{{ carrossel.framework }}</span>
+                <span class="conteudo-numero">CARROSSEL {{ num[0] }}</span>
+                <span class="conteudo-titulo">{{ item.titulo }}</span>
+                {% if item.framework %}<span class="framework-badge">{{ item.framework }}</span>{% endif %}
+            </div>
+            {% if item.pilar %}<div class="pilar-tag">{{ item.pilar }}</div>{% endif %}
+
+            {% if item.conteudo %}
+            {% if item.conteudo.capa %}
+            <div class="roteiro-section">
+                <span class="roteiro-label">CAPA:</span>
+                <p><strong>{% if item.conteudo.capa is mapping %}{{ item.conteudo.capa.titulo }}{% else %}{{ item.conteudo.capa }}{% endif %}</strong></p>
+                {% if item.conteudo.capa is mapping and item.conteudo.capa.subtitulo %}
+                <p>{{ item.conteudo.capa.subtitulo }}</p>
                 {% endif %}
             </div>
-            {% if carrossel.pilar %}
-            <div class="pilar-tag">{{ carrossel.pilar }}</div>
             {% endif %}
 
-            {% if carrossel.conteudo and carrossel.conteudo.slides %}
-            <div class="slides-grid">
-                {% for slide in carrossel.conteudo.slides %}
-                <div class="slide-card">
-                    <div class="slide-number">Slide {{ loop.index }}{% if loop.first %} (Capa){% endif %}{% if loop.last %} (CTA){% endif %}</div>
-                    {% if slide.titulo %}
-                    <div class="slide-titulo">{{ slide.titulo }}</div>
-                    {% endif %}
-                    <div class="slide-texto">{{ slide.texto }}</div>
-                </div>
-                {% endfor %}
+            {% if item.conteudo.slides %}
+            {% for slide in item.conteudo.slides %}
+            <div class="roteiro-section">
+                <span class="roteiro-label">Slide {{ loop.index }}:</span>
+                {% if slide.titulo %}<p><strong>{{ slide.titulo }}</strong></p>{% endif %}
+                <p>{{ slide.conteudo or slide.texto or '' }}</p>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% if item.conteudo.cta_final %}
+            <div class="roteiro-section cta-section">
+                <span class="roteiro-label">CTA FINAL:</span>
+                <p>{{ item.conteudo.cta_final }}</p>
             </div>
             {% endif %}
+
+            {% if item.conteudo.copy_legenda %}
+            <div class="roteiro-section">
+                <span class="roteiro-label">LEGENDA:</span>
+                <p>{{ item.conteudo.copy_legenda }}</p>
+            </div>
+            {% endif %}
+            {% endif %}
         </div>
+        {% endif %}
         {% endfor %}
     </section>
     {% endif %}
@@ -213,7 +237,7 @@
                 {% for item in planejamento.calendario %}
                 <tr>
                     <td>{{ item.data }}</td>
-                    <td>{{ item.tipo_conteudo }}</td>
+                    <td>{{ item.get("tipo_conteudo") or item.get("tipo") or "" }}</td>
                     <td>{{ item.titulo }}</td>
                 </tr>
                 {% endfor %}
