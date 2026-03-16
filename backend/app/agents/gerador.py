@@ -29,7 +29,7 @@ class GeradorAgent(BaseAgent):
             '  "temas": [{"tema": str, "pilar": str, "justificativa": str}],\n'
             '  "conteudos": [\n'
             "    {\n"
-            '      "tipo": "video_roteiro | arte_estatica | carrossel",\n'
+            '      "tipo": "video_roteiro OU arte_estatica OU carrossel (SOMENTE esses 3 valores, NUNCA inventar outros)",\n'
             '      "pilar": str,\n'
             '      "framework": "AIDA | PAS | HSO",\n'
             '      "titulo": str,\n'
@@ -53,16 +53,17 @@ class GeradorAgent(BaseAgent):
             "- Slides: 5-7, cada um MAX 3 frases.\n"
             "- Capa: headline que faz parar de scrollar.\n\n"
             "REGRAS DE OURO:\n"
-            "1. EXATAMENTE o numero de pecas de cada tipo conforme solicitado\n"
-            "2. Cada pilar DEVE ter pelo menos 1 peca\n"
-            "3. Distribuir datas UNIFORMEMENTE ao longo do mes\n"
-            "4. VARIAR frameworks entre pecas (nao usar o mesmo 3x seguidas)\n"
-            "5. Cada CTA DEVE mencionar o destino configurado\n"
-            "6. NAO repetir temas do historico\n"
-            "7. Gerar 1-2 variacoes A/B nas pecas mais importantes\n"
-            "8. Se ha produtos a promover, 50%+ dos temas devem girar em torno deles\n"
-            "9. Perfil do cliente = CONTEXTO (como escrever). Inputs do mes = DIRECIONAMENTO (o que escrever)\n"
-            "10. Tudo em portugues brasileiro"
+            "1. Campo 'tipo' DEVE ser EXATAMENTE: video_roteiro, arte_estatica ou carrossel. NUNCA outro valor.\n"
+            "2. EXATAMENTE o numero de pecas de cada tipo conforme solicitado\n"
+            "3. Cada pilar DEVE ter pelo menos 1 peca\n"
+            "4. Distribuir datas UNIFORMEMENTE ao longo do mes\n"
+            "5. VARIAR frameworks entre pecas (nao usar o mesmo 3x seguidas)\n"
+            "6. Cada CTA DEVE mencionar o destino configurado\n"
+            "7. NAO repetir temas do historico\n"
+            "8. Gerar 1-2 variacoes A/B nas pecas mais importantes\n"
+            "9. Se ha produtos a promover, 50%+ dos temas devem girar em torno deles\n"
+            "10. Perfil do cliente = CONTEXTO (como escrever). Inputs do mes = DIRECIONAMENTO (o que escrever)\n"
+            "11. Tudo em portugues brasileiro"
         )
 
         user_prompt = (
