@@ -2,7 +2,7 @@
 
 ## Sobre
 App web para geração de planejamentos mensais de marketing de conteúdo.
-Pipeline de 2 agents IA (Pesquisador → Gerador) cria roteiros, copies e carrosséis em ~40s.
+Gerador com auto-research via tool use (pesquisa web sob demanda) cria roteiros, copies e carrosséis.
 
 ## URLs
 - **Produção**: https://planejamento.dynamicagents.tech
@@ -21,14 +21,15 @@ Pipeline de 2 agents IA (Pesquisador → Gerador) cria roteiros, copies e carros
 - **Deploy**: Docker Swarm via Portainer + Traefik + Cloudflare
 
 ## Modelos LLM
-- **Gerador**: `anthropic/claude-sonnet-4-6` (temp 0.7, 12288 tokens) — gera tudo em 1 chamada
-- **Pesquisador**: `perplexity/sonar-pro` (temp 0.6) — web search real
+- **Gerador**: `anthropic/claude-sonnet-4-6` (temp 0.7, 12288 tokens) — gera tudo em 1 chamada com tool use
+- **Pesquisa Web**: `perplexity/sonar-pro` (temp 0.6) — chamado como tool pelo Gerador sob demanda
 - **Ajustador**: `anthropic/claude-haiku-4-5` (temp 0.3) — econômico para ajustes
 - **Kick Off**: `anthropic/claude-sonnet-4-6` (temp 0.3) — extrai perfil do texto
 
-## Pipeline (2 agents)
-1. **Pesquisador** (Perplexity Sonar) — web search: tendências, concorrentes, viral
-2. **Gerador** (Sonnet 4.6) — gera TUDO em 1 chamada: estratégia + conteúdos + calendário
+## Pipeline (1 agent com tool use)
+1. **Gerador** (Sonnet 4.6) — recebe tool `pesquisar_web`, decide o que pesquisar, gera estratégia + conteúdos + calendário
+   - Tool `pesquisar_web` → chama Perplexity Sonar internamente
+   - Pesquisa é direcionada ao contexto do mês (não dump genérico)
 - **Ajustador** (Haiku 4.5) — para feedback, revisa sem refazer do zero
 
 ## Kick Off (3 modos)
@@ -87,6 +88,9 @@ psql -U planner -d planejamento_agent -c "ALTER TABLE x ADD COLUMN IF NOT EXISTS
 - `/storage/` protegido por API key
 - Footer documentos: "PMAX Marketing de Performance" (sem menção a IA)
 - Logo clara no header PDF (fundo escuro), logo escura no DOCX (fundo branco)
+- Tool use: Gerador não usa `response_format: json_object` (incompatível com tool use/thinking)
+- Pesquisa Sonar pode falhar → tool_executor tem fallback gracioso
+- httpx timeout: read=300s para suportar tool use com múltiplas pesquisas
 
 ## Convenções
 - Idioma: PT-BR em código e prompts
