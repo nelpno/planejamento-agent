@@ -4,6 +4,12 @@ import re
 
 def parse_json_safe(response: str) -> dict:
     """Parse JSON from LLM response with fallback for markdown-wrapped JSON."""
+    # Strip thinking-like tags que podem aparecer no texto de resposta.
+    # Nota: via API OpenRouter, thinking blocks nativos do Claude vêm como
+    # elementos separados na array content (type="thinking"), não como tags
+    # no texto. Esta regex é um fallback defensivo para formatos inesperados.
+    response = re.sub(r"<thinking>.*?</thinking>", "", response, flags=re.DOTALL)
+
     try:
         return json.loads(response)
     except json.JSONDecodeError:

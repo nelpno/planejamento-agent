@@ -2,18 +2,8 @@ import { useState } from 'react';
 import type { PipelineLog } from '../types';
 
 const PIPELINE_STEPS = [
-  { key: 'pesquisador', label: 'Pesquisador', icon: SearchIcon },
-  { key: 'gerador', label: 'Gerador', icon: PlanIcon },
+  { key: 'gerador', label: 'Gerando Planejamento', icon: PlanIcon },
 ];
-
-function SearchIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-    </svg>
-  );
-}
 
 function PlanIcon() {
   return (
@@ -74,20 +64,13 @@ export default function PipelineProgress({ logs, currentAgent }: PipelineProgres
       </h3>
 
       <div className="space-y-4">
-        {PIPELINE_STEPS.map((step, index) => {
+        {PIPELINE_STEPS.map((step) => {
           const status = getStepStatus(step.key);
           const stepLogs = getStepLogs(step.key);
           const isExpanded = expandedStep === step.key;
 
           return (
             <div key={step.key}>
-              {/* Connector line */}
-              {index > 0 && (
-                <div className="flex justify-center -mt-4 -mb-4 py-0">
-                  <div className={`w-0.5 h-4 ${status === 'waiting' ? 'bg-gray-200' : 'bg-green-300'}`} />
-                </div>
-              )}
-
               {/* Step */}
               <button
                 onClick={() => setExpandedStep(isExpanded ? null : step.key)}
@@ -117,7 +100,7 @@ export default function PipelineProgress({ logs, currentAgent }: PipelineProgres
                     <div key={i} className="bg-gray-50 rounded-lg p-3 text-sm border border-gray-100">
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-medium text-gray-700">
-                          Iteração {log.iteration} - {log.decision}
+                          {log.decision}
                         </span>
                         {log.duration_ms && (
                           <span className="text-xs text-gray-500">

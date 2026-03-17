@@ -1,5 +1,7 @@
 import time
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from app.agents.context import PipelineContext
 from app.providers.openrouter_client import OpenRouterClient
@@ -11,6 +13,7 @@ class BaseAgent(ABC):
 
     def __init__(self, client: OpenRouterClient):
         self.client = client
+        self._on_progress: Callable[..., Awaitable[Any]] | None = None
 
     async def run(self, context: PipelineContext) -> PipelineContext:
         start_time = time.time()

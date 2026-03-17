@@ -59,16 +59,6 @@ class ConteudoGerado:
 
 
 @dataclass
-class RevisaoResult:
-    """Output of Revisor Agent."""
-
-    score: int = 0  # 0-100
-    aprovado: bool = False
-    notas: list[str] = field(default_factory=list)
-    conteudos_revisados: list[dict] = field(default_factory=list)
-
-
-@dataclass
 class DecisionEntry:
     agent_name: str
     timestamp: str
@@ -95,11 +85,8 @@ class PipelineContext:
     pesquisa: PesquisaResult | None = None
     estrategia: EstrategiaResult | None = None
     conteudos: list[ConteudoGerado] = field(default_factory=list)
-    revisao: RevisaoResult | None = None
 
     # Pipeline metadata
-    iteration: int = 0
-    max_iterations: int = 3
     decision_log: list[DecisionEntry] = field(default_factory=list)
     current_status: str = "pending"
     started_at: str | None = None
@@ -143,10 +130,6 @@ class PipelineContext:
             ConteudoGerado(**_ff(ConteudoGerado, c))
             for c in data.get("conteudos", [])
         ]
-        if data.get("revisao"):
-            data["revisao"] = RevisaoResult(
-                **_ff(RevisaoResult, data["revisao"])
-            )
         data["decision_log"] = [
             DecisionEntry(**_ff(DecisionEntry, d))
             for d in data.get("decision_log", [])
