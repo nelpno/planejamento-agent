@@ -79,7 +79,7 @@ class OpenRouterClient:
         tool_executor: Callable[[str, dict], Awaitable[str]],
         temperature: float = 0.7,
         max_tokens: int = 12288,
-        thinking: dict | None = None,
+        reasoning: dict | None = None,
         max_tool_rounds: int = 5,
     ) -> tuple[str, list[dict]]:
         """Chat with tool use loop.
@@ -87,7 +87,7 @@ class OpenRouterClient:
         Args:
             tools: tool definitions in OpenAI format
             tool_executor: async callback (tool_name, arguments) -> result_string
-            thinking: extended thinking config (Phase 2), e.g. {"type": "enabled", "budget_tokens": 8000}
+            reasoning: extended thinking config, e.g. {"max_tokens": 8000}
             max_tool_rounds: max tool use rounds before aborting
 
         Returns:
@@ -100,8 +100,8 @@ class OpenRouterClient:
             "temperature": temperature,
             "max_tokens": max_tokens,
         }
-        if thinking:
-            payload["thinking"] = thinking
+        if reasoning:
+            payload["reasoning"] = reasoning
 
         tool_history: list[dict] = []
 

@@ -140,6 +140,7 @@ class GeradorAgent(BaseAgent):
             tool_executor=tool_executor,
             temperature=0.7,
             max_tokens=12288,
+            reasoning={"max_tokens": 8000},
         )
 
         data = self.parse_json_safe(response)
